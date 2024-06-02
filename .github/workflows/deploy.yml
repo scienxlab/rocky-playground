@@ -1,0 +1,23 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: playground ssh deploy
+        uses: fifsky/ssh-action@master
+        with:
+          command: |
+            cd rocky-playground
+            GIT_SSH_COMMAND='ssh -i /home/matt/.ssh/id_rsa -o IdentitiesOnly=yes' git pull
+            make run
+          host: ${{ secrets.HOST }}
+          user: matt
+          key: ${{ secrets.PRIVATE_KEY }}
+          args: "-tt -vvv"
