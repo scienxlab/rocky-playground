@@ -1,8 +1,8 @@
 # Rocky playground
 
-This app is one of Agile's [geosci.ai](https://geosci.ai) experiments.
+This app is a fork of Agile's (archived) fork.
 
-The app is currently deployed on AWS Amplify — [check it out!](https://playground.geosci.ai).
+The app is currently deployed at [playground.scienxlab.org](https://playground.scienxlab.org).
 
 ## About
 
