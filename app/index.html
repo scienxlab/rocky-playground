@@ -1,5 +1,7 @@
 <!doctype html>
-<!-- Copyright 2016 Google Inc. All Rights Reserved.
+<!-- Original Copyright 2016 Google Inc. All Rights Reserved.
+     Modifications Copyright 2022 Agile Scientific. Some rights reserved.
+     Modifications Copyright 2025 Scienxlab. Some rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,21 +23,21 @@ limitations under the License.
   <meta name="keywords" content="neural networks,machine learning,geoscience,geocomputing">
 
   <meta property="og:type" content="article"/>
-  <meta property="og:title" content="Rocky Playground"/>
-  <meta property="og:description" content="Tinker with a neural network right here in your browser.">
+  <meta property="og:title" content="ML Playground"/>
+  <meta property="og:description" content="Tinker with machine learning algorithms right here in your browser.">
   <meta property="og:url" content="http://playground.scienxlab.org"/>
   <meta property="og:image" content="https://scienxlab.org/images/scienxlab.png"/>
 
   <meta name="twitter:card" value="summary_large_image">
-  <meta name="twitter:title" content="Rocky Playground">
-  <meta name="twitter:description" content="Tinker with a neural network right here in your browser.">
+  <meta name="twitter:title" content="ML Playground">
+  <meta name="twitter:description" content="Tinker with machine learning algorithms right here in your browser.">
   <meta name="twitter:url" content="http://playground.scienxlab.org">
   <meta name="twitter:image" content="https://scienxlab.org/images/scienxlab.png">
   <meta name="twitter:image:width" content="874">
   <meta name="twitter:image:height" content="430">
 
-  <meta name="author" content="Daniel Smilkov and Shan Carter">
-  <title>A Rocky Neural Network Playground</title>
+  <meta name="author" content="Daniel Smilkov, Shan Carter, David Cato, and Matt Hall">
+  <title>A Machine Learning Playground</title>
   <link rel="stylesheet" href="bundle.css" type="text/css">
   <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500|Material+Icons" rel="stylesheet" type="text/css">
   <script src="lib.js"></script>
@@ -54,7 +56,7 @@ limitations under the License.
   </a>
   <!-- Header -->
   <header>
-    <h1 class="l--page">Tinker with a <b>neural network</b> <span class="optional">right here </span>in your browser.<br>Don’t worry, you can’t break it. Have fun!</h1>
+    <h1 class="l--page">Try <b>machine learning</b> <span class="optional">right here </span>in your browser.<br>Don’t worry, you can’t break it. Have fun!</h1>
   </header>
 
   <!-- Top Controls -->
@@ -75,6 +77,33 @@ limitations under the License.
       <div class="control">
         <span class="label">Epoch</span>
         <span class="value" id="iter-number"></span>
+      </div>
+      <div class="control ui-problem">
+        <label for="problem">Problem type</label>
+        <div class="select">
+          <select id="problem">
+            <option value="classification">Classification</option>
+            <option value="regression">Regression</option>
+          </select>
+        </div>
+      </div>
+      <div class="control ui-lossfunc">
+        <label for="lossFunc">Loss function</label>
+        <div class="select">
+          <select id="lossFunc">
+            <option value="square">MSE (L2 loss)</option>
+            <option value="mae">MAE (L1 loss)</option>
+            <option value="hinge">Hinge loss</option>
+            <option value="squared hinge">Squared hinge</option>
+            <option value="log">Log loss</option>
+            <option value="huber">Huber loss</option>
+            <option value="modified huber">Modified Huber</option>
+            <option value="cross entropy">Cross-entropy</option>
+            <option value="exponential">Exponential loss</option>
+            <option value="poisson">Poisson loss</option>
+            <option value="epsilon insensitive">ε insensitive</option>
+          </select>
+        </div>
       </div>
       <div class="control ui-learningRate">
         <label for="learningRate">Learning rate</label>
@@ -98,13 +127,16 @@ limitations under the License.
         <label for="activations">Activation</label>
         <div class="select">
           <select id="activations">
-            <option value="linear">Linear</option>
+            <option value="linear">Linear (none)</option>
+            <option value="bent">Bent identity</option>
             <option value="sigmoid">Sigmoid</option>
             <option value="tanh">Tanh</option>
             <option value="relu">ReLU</option>
             <option value="leakyrelu">Leaky ReLU</option>
+            <option value="softplus">Softplus</option>
             <option value="elu">ELU</option>
             <option value="swish">Swish</option>
+            <option value="mish">Mish</option>
             <option value="gelu">GELU</option>
           </select>
         </div>
@@ -116,11 +148,13 @@ limitations under the License.
             <option value="none">None</option>
             <option value="L1">L1</option>
             <option value="L2">L2</option>
+            <option value="elastic net">Elastic net</option>
+            <option value="huber">Huber</option>
           </select>
         </div>
       </div>
       <div class="control ui-regularizationRate">
-        <label for="regularRate">Regularization rate</label>
+        <label for="regularRate">Lambda</label>
         <div class="select">
           <select id="regularRate">
             <option value="0">0</option>
@@ -133,15 +167,6 @@ limitations under the License.
             <option value="1">1</option>
             <option value="3">3</option>
             <option value="10">10</option>
-          </select>
-        </div>
-      </div>
-      <div class="control ui-problem">
-        <label for="problem">Problem type</label>
-        <div class="select">
-          <select id="problem">
-            <option value="classification">Classification</option>
-            <option value="regression">Regression</option>
           </select>
         </div>
       </div>
@@ -493,15 +518,52 @@ limitations under the License.
     </div> <!-- end of tutorial -->
 
     <div class="l--body">
+      <h2>What kinds of estimators can I make?</h2>
+      <p>If you remove all the hidden layers, then the Playground can model some 'shallow' learning algorithms:</p>
+      <ul>
+        <li>Regression
+          <ul>
+            <li><strong>Linear regression:</strong> Choose MSE loss.</li>
+            <li><strong>Ridge or Lasso:</strong> Add L2 or L1 regularization respectively.</li>
+            <li><strong>Basis expansion:</strong> Add the other input features.</li>
+            <li><strong>Robust regression:</strong> Use Huber loss.</li>
+            <li><strong>SVM regression:</strong> Use epsilon insensitive loss.</li>
+          </ul>
+        </li>
+        <li>Classification
+          <ul>
+            <li><strong>Ridge classifier:</strong> Choose MSE loss and L2 regularization.</li>
+            <li><strong>Logistic regression:</strong> Choose binary cross-entropy loss.</li>
+            <li><strong>Support vector machine:</strong> Use hinge loss.</li>
+          </ul>
+        </li>
+      </ul>
+      <p>Note that there is no activation function applied to the output layer. If you want to apply a nonlinear function to the output, add a single hidden layer with a single unit.</p>
+    </div>
+
+    <div class="l--body">
+      <h2>What do all the colors mean?</h2>
+      <p>Blue and cyan are used throughout the visualization in slightly different ways, but in general the darker blue shows negative values while cyan shows positive values.</p>
+      <p>The data points (represented by small circles) are initially colored blue or cyan, which correspond to negative one and positive one respectively.</p>
+      <p>In the hidden layers, the lines are colored by the weights of the connections between neurons. Cyan shows a positive weight, which means the network is using that output of the neuron as given. A blue line shows that the network is assiging a negative weight.</p>
+      <p>In the output layer, the dots are colored blue or cyan depending on their original values. The background color shows what the network is predicting for a particular area. The intensity of the color shows how confident that prediction is.</p>
+    </div>
+
+    <div class="l--body">
+      <h2>Can I modify the interface?</h2>
+      <p>Use the controls below to tailor the playground to a specific topic or lesson. Just choose which features you’d like to be visible below then save <a class="hide-controls-link" href="#">this link</a>, or <a href="javascript:location.reload();">refresh</a> the page.</p>
+      <div class="hide-controls"></div>
+    </div>
+
+    <div class="l--body">
       <h2>How do I make my own datasets?</h2>
       <p>You will need to define a machine learning task with 2 features and one target. About 400 records is ideal — split 50% positive and 50% negative classes for a classification problem. The features will be scaled using Z-score standardization (multiplied by 2 for complicated reasons). The target should be -1 and 1 for classification, or in the range [-1, 1] for regression. <a href="https://github.com/scienxlab/rocky-playground/blob/main/notebooks/Data_for_Playground.ipynb">Here's an example of how to prepare data.</a></p>
       <p>Once you have a JSON file, you can upload it using the button with the <i class="material-icons">file_upload</i> icon (top left).</p>
     </div>
 
-
     <div class="l--body">
       <h2>Credits</h2>
-      <p>This fork of <a href="https://playground.tensorflow.org/">the TensorFlow Playground</a> was adapted by Matt Hall and Evan Bianco at <a href="https://agilescientific.com/">Agile Scientific</a>.</p>
+      <p>This fork of <a href="https://playground.tensorflow.org/">the TensorFlow Playground</a> was adapted by <a href="https://github.com/kwinkunks">Matt Hall</a> and <a href="https://github.com/EvanBianco">Evan Bianco</a>. The fork is hosted by <a href="https://scienxlab.org">Scienxlab</a>.</p>
       <p>Here's some of what we've added or changed:</p>
       <ul>
         <li>Added several new real and synthetic datasets, with descriptions.</li>

@@ -101,9 +101,7 @@ export class Node {
   }
 }
 
-/**
- * An error function and its derivative.
- */
+/** An error function and its derivative. */
 export interface ErrorFunction {
   error: (output: number, target: number) => number;
   der: (output: number, target: number) => number;
@@ -128,6 +126,105 @@ export class Errors {
     error: (output: number, target: number) =>
                0.5 * Math.pow(output - target, 2),
     der: (output: number, target: number) => output - target
+  };
+  public static MAE: ErrorFunction = {
+    error: (output: number, target: number) =>
+      Math.abs(output - target),
+    der: (output: number, target: number) => {
+      if (output > target) return 1;
+      if (output < target) return -1;
+      return 0;
+    }
+  };
+  public static HINGE: ErrorFunction = {
+    error: (output: number, target: number) =>
+      Math.max(0, 1 - output * target),
+    der: (output: number, target: number) =>
+      1 - output * target <= 0 ? 0 : -target
+  };
+  public static SQUARED_HINGE: ErrorFunction = {
+    error: (output: number, target: number) => {
+      // Call the HINGE error and square the result
+      const hingeError = Errors.HINGE.error(output, target);
+      return Math.pow(hingeError, 2); // Square the hinge loss
+    },
+    der: (output: number, target: number) => {
+      const hingeDer = Errors.HINGE.der(output, target);
+      return hingeDer <= 0 ? 0 : 2 * hingeDer; // Multiply by 2 :)
+    }
+  };
+  public static LOG: ErrorFunction = {
+    error: (output: number, target: number) =>
+      -(target * Math.log(output) + (1 - target) * Math.log(1 - output)),
+    der: (output: number, target: number) =>
+      (output - target) / (output * (1 - output))
+  };
+  public static HUBER: ErrorFunction = {
+    error: (output: number, target: number) => {
+      const delta = 1.0;
+      const diff = output - target;
+      return Math.abs(diff) <= delta
+        ? 0.5 * diff * diff
+        : delta * (Math.abs(diff) - 0.5 * delta);
+    },
+    der: (output: number, target: number) => {
+      const delta = 1.0;
+      const diff = output - target;
+      return Math.abs(diff) <= delta 
+        ? diff 
+        : (diff > 0 ? delta : -delta);
+    }
+  };
+  public static MODIFIED_HUBER: ErrorFunction = {
+    error: (output: number, target: number) => {
+      const hinge = Math.max(0, 1 - target * output); // Hinge loss term
+      const squaredError = 0.5 * Math.pow(target - output, 2); // Squared error term
+      return hinge + squaredError; // Combine both terms
+    },
+    der: (output: number, target: number) => {
+      const hingeGrad = target * (output < 1 ? -1 : 0); // Derivative of the hinge loss
+      const squaredErrorGrad = output - target; // Derivative of the squared error term
+      return hingeGrad + squaredErrorGrad; // Combine the gradients
+    }
+  };
+  public static BCE: ErrorFunction = { // Binary cross entropy
+    error: (output: number, target: number) => {
+      // Convert target from (-1, +1) to (0, 1)
+      const target01 = (target + 1) / 2;
+      return - (target01 * Math.log(output) + (1 - target01) * Math.log(1 - output));
+    },
+    der: (output: number, target: number) => {
+      const target01 = (target + 1) / 2;
+      return (output - target01) / (output * (1 - output));
+    }
+  };
+  public static EXPONENTIAL: ErrorFunction = {
+    error: (output: number, target: number) =>
+      Math.exp(-output * target),
+    der: (output: number, target: number) =>
+      -target * Math.exp(-output * target)
+  };
+  public static POISSON: ErrorFunction = {
+    error: (output: number, target: number) =>
+      output - target * Math.log(output),
+    der: (output: number, target: number) =>
+      1 - target / output
+  };
+  public static EPSILON_INSENSITIVE: ErrorFunction = {
+    error: (output: number, target: number) => {
+      const epsilon = 0.1; // Example epsilon value
+      const diff = Math.abs(output - target);
+      return diff <= epsilon ? 0 : diff - epsilon;
+    },
+    der: (output: number, target: number) => {
+      const epsilon = 0.1;
+      const diff = output - target;
+      if (Math.abs(diff) <= epsilon) {
+        return 0;
+      } else {
+        return diff > 0 ? 1 : -1;
+      }
+    }
   };
 }
 
@@ -171,6 +268,11 @@ export class Activations {
     },
     compileToPy: (input: string) => `ELU(${input})`
   };
+  public static SOFTPLUS: ActivationFunction = {
+    output: x => Math.log(1 + Math.exp(x)),
+    der: x => 1 / (1 + Math.exp(-x)),  // Sigmoid function
+    compileToPy: (input: string) => `np.log(1 + np.exp(${input}))`
+  };
   public static SIGMOID: ActivationFunction = {
     output: x => 1 / (1 + Math.exp(-x)),
     der: x => {
@@ -189,6 +291,16 @@ export class Activations {
       return output * (1 - output);
     },
     compileToPy: (input: string) => `${input} * SIGMOID(${input})`
+  };
+  public static MISH: ActivationFunction = {
+    output: x => x * (Math as any).tanh(Math.log(1 + Math.exp(x))),
+    der: x => {
+      let omega = Math.exp(x);
+      let delta = omega + 1;
+      let tanhVal = (Math as any).tanh(Math.log(delta));
+      return tanhVal + x * (omega / delta) * (1 - tanhVal * tanhVal);
+    },
+    compileToPy: (input: string) => `${input} * np.tanh(np.log(1 + np.exp(${input})))`
   };
   public static GELU: ActivationFunction = {
     output: x => {
@@ -209,6 +321,11 @@ export class Activations {
     der: x => 1,
     compileToPy: (input: string) => `${input}`
   };
+  public static BENT_IDENTITY: ActivationFunction = {
+    output: x => (Math.sqrt(x * x + 1) - 1) / 2 + x,
+    der: x => x / (2 * Math.sqrt(x * x + 1)) + 1,
+    compileToPy: (input: string) => `(np.sqrt(${input}**2 + 1) - 1) / 2 + ${input}`
+  };
 }
 
 /** Built-in regularization functions */
@@ -220,6 +337,14 @@ export class RegularizationFunction {
   public static L2: RegularizationFunction = {
     output: w => 0.5 * w * w,
     der: w => w
+  };
+  public static ElasticNet: RegularizationFunction = {
+    output: w => 0.5 * w * w + Math.abs(w),
+    der: w => w + (w < 0 ? -1 : (w > 0 ? 1 : 0))
+  };
+  public static Huber: RegularizationFunction = {
+    output: w => Math.abs(w) < 1 ? 0.5 * w * w : Math.abs(w) - 0.5,
+    der: w => Math.abs(w) < 1 ? w : (w < 0 ? -1 : 1)
   };
 }
 

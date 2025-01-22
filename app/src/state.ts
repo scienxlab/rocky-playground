@@ -27,15 +27,35 @@ export let activations: {[key: string]: nn.ActivationFunction} = {
   "tanh": nn.Activations.TANH,
   "sigmoid": nn.Activations.SIGMOID,
   "swish": nn.Activations.SWISH,
+  "mish": nn.Activations.MISH,
+  "softplus": nn.Activations.SOFTPLUS,
   "gelu": nn.Activations.GELU,
-  "linear": nn.Activations.LINEAR
+  "linear": nn.Activations.LINEAR,
+  "bent": nn.Activations.BENT_IDENTITY
 };
 
 /** A map between names and regularization functions. */
 export let regularizations: {[key: string]: nn.RegularizationFunction} = {
   "none": null,
   "L1": nn.RegularizationFunction.L1,
-  "L2": nn.RegularizationFunction.L2
+  "L2": nn.RegularizationFunction.L2,
+  "elastic net": nn.RegularizationFunction.ElasticNet,
+  "huber": nn.RegularizationFunction.Huber
+};
+
+/** A map between names and loss functions. */
+export let errors: {[key: string]: nn.ErrorFunction} = {
+  "square": nn.Errors.SQUARE,
+  "mae": nn.Errors.MAE,
+  "hinge": nn.Errors.HINGE,
+  "squared hinge": nn.Errors.SQUARED_HINGE,
+  "log": nn.Errors.LOG,
+  "huber": nn.Errors.HUBER,
+  "modified huber": nn.Errors.MODIFIED_HUBER,
+  "cross entropy": nn.Errors.BCE,
+  "exponential": nn.Errors.EXPONENTIAL,
+  "poisson": nn.Errors.POISSON,
+  "epsilon insensitive": nn.Errors.EPSILON_INSENSITIVE
 };
 
 /** DatasetGenerator class contains generator functions for training and
@@ -149,6 +169,8 @@ export class State {
     {name: "regDataset", type: Type.OBJECT, keyMap: regDatasets},
     {name: "learningRate", type: Type.NUMBER},
     {name: "regularizationRate", type: Type.NUMBER},
+    {name: "errorFunc", type: Type.OBJECT, keyMap: errors},
+    {name: "problem", type: Type.OBJECT, keyMap: problems},
     {name: "noise", type: Type.NUMBER},
     {name: "networkShape", type: Type.ARRAY_NUMBER},
     {name: "seed", type: Type.STRING},
@@ -162,7 +184,6 @@ export class State {
     {name: "ySquared", type: Type.BOOLEAN},
     {name: "collectStats", type: Type.BOOLEAN},
     {name: "tutorial", type: Type.STRING},
-    {name: "problem", type: Type.OBJECT, keyMap: problems},
     {name: "initZero", type: Type.BOOLEAN},
     {name: "hideText", type: Type.BOOLEAN}
   ];
@@ -178,6 +199,7 @@ export class State {
   percTrainData = 50;
   activation = nn.Activations.SIGMOID;
   regularization: nn.RegularizationFunction = null;
+  errorFunc = nn.Errors.SQUARE;
   problem = Problem.CLASSIFICATION;
   initZero = false;
   hideText = false;

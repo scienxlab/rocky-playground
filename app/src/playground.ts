@@ -22,12 +22,14 @@ import {
   activations,
   problems,
   regularizations,
+  errors,
   getKeyFromValue,
   Problem
 } from "./state";
 import {Example2D, shuffle} from "./dataset";
 import {AppendingLineChart} from "./linechart";
 import * as d3 from 'd3';
+
 
 let mainWidth;
 
@@ -41,7 +43,7 @@ d3.select(".more button").on("click", function() {
 
 function scrollTween(offset) {
   return function() {
-    let i = d3.interpolateNumber(window.pageYOffset ||
+    let i = d3.interpolateNumber(window.scrollY ||
         document.documentElement.scrollTop, offset);
     return function(t) { scrollTo(0, i(t)); };
   };
@@ -80,6 +82,7 @@ let HIDABLE_CONTROLS = [
   ["Activation", "activation"],
   ["Regularization", "regularization"],
   ["Regularization rate", "regularizationRate"],
+  ["Loss function", "lossFunc"],
   ["Problem type", "problem"],
   ["Which dataset", "dataset"],
   ["Ratio train data", "percTrainData"],
@@ -271,6 +274,9 @@ function makeGUI() {
     state.numHiddenLayers++;
     parametersChanged = true;
     reset();
+    // Just make sure it's enabled.
+    d3.select("#activations").property("disabled", false)
+        .style("color", "");
   });
 
   d3.select("#remove-layers").on("click", () => {
@@ -280,6 +286,11 @@ function makeGUI() {
     state.numHiddenLayers--;
     state.networkShape.splice(state.numHiddenLayers);
     parametersChanged = true;
+    // If zero layers, disable the activation dropdown
+    if (state.numHiddenLayers == 0) {
+      d3.select("#activations").property("disabled", true)
+        .style("color", "#aaa");
+    }
     reset();
   });
 
@@ -350,7 +361,18 @@ function makeGUI() {
     reset();
   });
   activationDropdown.property("value",
-      getKeyFromValue(activations, state.activation));
+      getKeyFromValue(activations, state.activation)
+    );
+  // Initialize the state of the activation function dropdown based on the number of hidden layers
+  if (state.numHiddenLayers == 0) {
+    d3.select("#activations").property("disabled", true)
+      // .style("background-color", "#f0f0f0")
+      .style("color", "#aaa");
+  } else {
+    d3.select("#activations").property("disabled", false)
+      // .style("background-color", "")
+      .style("color", "");
+  }
 
   let learningRate = d3.select("#learningRate").on("change", function() {
     state.learningRate = +this.value;
@@ -360,15 +382,27 @@ function makeGUI() {
   });
   learningRate.property("value", state.learningRate);
 
-  let regularDropdown = d3.select("#regularizations").on("change",
-      function() {
+  let regularDropdown = d3.select("#regularizations").on("change", function() {
     state.regularization = regularizations[this.value];
     state.serialize();
     userHasInteracted();
     parametersChanged = true;
+
+  // Check if the selected regularization is "none" and disable the lambda dropdown
+  if (this.value === "none") {
+    d3.select("#regularRate").property("disabled", true)
+      // .style("background-color", "#f0f0f0")
+      .style("color", "#aaa");
+  } else {
+    d3.select("#regularRate").property("disabled", false)
+      // .style("background-color", "")
+      .style("color", "");
+  }
+
   });
   regularDropdown.property("value",
-      getKeyFromValue(regularizations, state.regularization));
+      getKeyFromValue(regularizations, state.regularization)
+    );
 
   let regularRate = d3.select("#regularRate").on("change", function() {
     state.regularizationRate = +this.value;
@@ -376,7 +410,28 @@ function makeGUI() {
     userHasInteracted();
     parametersChanged = true;
   });
+  // Initialize the state of the regularization rate dropdown based on the current regularization
+  const initialRegValue = getKeyFromValue(regularizations, state.regularization);
+  if (initialRegValue === "none") {
+    d3.select("#regularRate").property("disabled", true)
+      // .style("background-color", "#f0f0f0")
+      .style("color", "#aaa");
+  } else {
+    d3.select("#regularRate").property("disabled", false)
+      // .style("background-color", "")
+      .style("color", "");
+  }
   regularRate.property("value", state.regularizationRate);
+
+  let lossFunc = d3.select("#lossFunc").on("change", function() {
+    state.errorFunc = errors[this.value];
+    state.serialize();
+    userHasInteracted();
+    parametersChanged = true;
+  });
+  lossFunc.property("value",
+    getKeyFromValue(errors, state.errorFunc)
+  );
 
   let problem = d3.select("#problem").on("change", function() {
     state.problem = problems[this.value];
@@ -865,13 +920,13 @@ function updateDecisionBoundary(network: nn.Node[][], firstTime: boolean) {
   }
 }
 
-function getLoss(network: nn.Node[][], dataPoints: Example2D[]): number {
+function getLoss(network: nn.Node[][], dataPoints: Example2D[], errorFunc: nn.ErrorFunction): number {
   let loss = 0;
   for (let i = 0; i < dataPoints.length; i++) {
     let dataPoint = dataPoints[i];
     let input = constructInput(dataPoint.x, dataPoint.y);
     let output = nn.forwardProp(network, input);
-    loss += nn.Errors.SQUARE.error(output, dataPoint.label);
+    loss += errorFunc.error(output, dataPoint.label);
   }
   return loss / dataPoints.length;
 }
@@ -942,14 +997,14 @@ function oneStep(): void {
   trainData.forEach((point, i) => {
     let input = constructInput(point.x, point.y);
     nn.forwardProp(network, input);
-    nn.backProp(network, point.label, nn.Errors.SQUARE);
+    nn.backProp(network, point.label, state.errorFunc);
     if ((i + 1) % state.batchSize === 0) {
       nn.updateWeights(network, state.learningRate, state.regularization, state.regularizationRate);
     }
   });
   // Compute the loss.
-  lossTrain = getLoss(network, trainData);
-  lossTest = getLoss(network, testData);
+  lossTrain = getLoss(network, trainData, state.errorFunc);
+  lossTest = getLoss(network, testData, state.errorFunc);
   updateUI();
 }
 
@@ -985,11 +1040,11 @@ function reset(onStartup=false) {
   let numInputs = constructInput(0 , 0).length;
   let shape = [numInputs].concat(state.networkShape).concat([1]);
   let outputActivation = (state.problem === Problem.REGRESSION) ?
-      nn.Activations.LINEAR : nn.Activations.TANH;
+      nn.Activations.LINEAR : nn.Activations.LINEAR;
   network = nn.buildNetwork(shape, state.activation, outputActivation,
       constructInputIds(), state.initZero);
-  lossTrain = getLoss(network, trainData);
-  lossTest = getLoss(network, testData);
+  lossTrain = getLoss(network, trainData, state.errorFunc);
+  lossTest = getLoss(network, testData, state.errorFunc);
   drawNetwork(network);
   updateUI(true);
 };
@@ -1256,7 +1311,7 @@ function handleFileSelect(evt) {
     reader.onload = (function (theFile) {
       return function (e) {
         try {
-          customDataset = JSON.parse(e.target.result);
+          customDataset = JSON.parse(e.target.result as string);
           customLoaded = true;
           loadAndRenderCustomData(customDataset);
         } catch (ex) {
