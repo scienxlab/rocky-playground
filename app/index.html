@@ -95,10 +95,9 @@ limitations under the License.
             <option value="mae">MAE (L1 loss)</option>
             <option value="hinge">Hinge loss</option>
             <option value="squared hinge">Squared hinge</option>
-            <option value="log">Log loss</option>
             <option value="huber">Huber loss</option>
             <option value="modified huber">Modified Huber</option>
-            <option value="cross entropy">Cross-entropy</option>
+            <option value="cross entropy">Log (BCE) loss</option>
             <option value="exponential">Exponential loss</option>
             <option value="poisson">Poisson loss</option>
             <option value="epsilon insensitive">ε insensitive</option>
@@ -356,9 +355,8 @@ limitations under the License.
         <div id="linechart"></div>
       </div>
       <div id="heatmap"></div>
-      <div style="float:left;margin-top:20px">
+      <div style="float:left;">
         <div style="display:flex; align-items:center;">
-
           <!-- Gradient color scale -->
           <div class="label" style="width:105px; margin-right: 10px">
             Colors shows data, neuron and weight values.
@@ -376,8 +374,8 @@ limitations under the License.
             </g>
           </svg>
         </div>
-        <br/>
-        <div style="display:flex;">
+
+        <div style="display:flex; margin-top:20px; margin-bottom:30px;">
           <label class="ui-showTestData mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="show-test-data">
             <input type="checkbox" id="show-test-data" class="mdl-checkbox__input" checked>
             <span class="mdl-checkbox__label label">Show test data</span>
@@ -387,6 +385,20 @@ limitations under the License.
             <span class="mdl-checkbox__label label">Discretize output</span>
           </label>
         </div>
+        <!-- Metrics section -->
+<!--
+        <h4>Evaluation</h4>
+        <div class="metrics" style="margin-top:10px;">
+          <div class="output-stats precision">
+            <span>Precision</span>
+            <div class="value" id="eval-precision"></div>
+          </div>
+          <div class="output-stats recall">
+            <span>Recall</span>
+            <div class="value" id="eval-recall"></div>
+          </div>
+        </div>
+-->
       </div>
     </div>
 
@@ -533,7 +545,7 @@ limitations under the License.
         <li>Classification
           <ul>
             <li><strong>Ridge classifier:</strong> Choose MSE loss and L2 regularization.</li>
-            <li><strong>Logistic regression:</strong> Choose binary cross-entropy loss.</li>
+            <li><strong>Logistic regression:</strong> Choose log loss.</li>
             <li><strong>Support vector machine:</strong> Use hinge loss.</li>
           </ul>
         </li>

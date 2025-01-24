@@ -968,6 +968,13 @@ function updateUI(firstStep = false) {
   d3.select("#iter-number").text(addCommas(zeroPad(iter)));
   lineChart.addDataPoint([lossTrain, lossTest]);
 
+  // Update precision and recall, or R2 and RMSE.
+  // d3.select("#eval-precision").text(humanReadable(lossTrain));
+  // d3.select("#eval-recall").text(humanReadable(lossTest));
+  // d3.select("#eval-r2").text(humanReadable(lossTrain));
+  // d3.select("#eval-rmse").text(humanReadable(lossTest));
+
+
   // Inject HTML of Python code.
   d3.select("#network-as-python").html(nn.compileNetworkToPy(network));
 }
@@ -1040,7 +1047,7 @@ function reset(onStartup=false) {
   let numInputs = constructInput(0 , 0).length;
   let shape = [numInputs].concat(state.networkShape).concat([1]);
   let outputActivation = (state.problem === Problem.REGRESSION) ?
-      nn.Activations.LINEAR : nn.Activations.LINEAR;
+      nn.Activations.LINEAR : nn.Activations.TANH;
   network = nn.buildNetwork(shape, state.activation, outputActivation,
       constructInputIds(), state.initZero);
   lossTrain = getLoss(network, trainData, state.errorFunc);

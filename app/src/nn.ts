@@ -153,12 +153,6 @@ export class Errors {
       return hingeDer <= 0 ? 0 : 2 * hingeDer; // Multiply by 2 :)
     }
   };
-  public static LOG: ErrorFunction = {
-    error: (output: number, target: number) =>
-      -(target * Math.log(output) + (1 - target) * Math.log(1 - output)),
-    der: (output: number, target: number) =>
-      (output - target) / (output * (1 - output))
-  };
   public static HUBER: ErrorFunction = {
     error: (output: number, target: number) => {
       const delta = 1.0;
@@ -187,15 +181,17 @@ export class Errors {
       return hingeGrad + squaredErrorGrad; // Combine the gradients
     }
   };
-  public static BCE: ErrorFunction = { // Binary cross entropy
+  public static BINARY_CROSS_ENTROPY: ErrorFunction = {
     error: (output: number, target: number) => {
-      // Convert target from (-1, +1) to (0, 1)
+      // Convert from (-1, +1) to (0, 1)
       const target01 = (target + 1) / 2;
-      return - (target01 * Math.log(output) + (1 - target01) * Math.log(1 - output));
+      const output01 = (output + 1) / 2;
+      return - (target01 * Math.log(output01) + (1 - target01) * Math.log(1 - output01));
     },
     der: (output: number, target: number) => {
       const target01 = (target + 1) / 2;
-      return (output - target01) / (output * (1 - output));
+      const output01 = (output + 1) / 2;
+      return (output01 - target01) / (output01 * (1 - output01));
     }
   };
   public static EXPONENTIAL: ErrorFunction = {

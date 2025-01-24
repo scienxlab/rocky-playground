@@ -49,10 +49,9 @@ export let errors: {[key: string]: nn.ErrorFunction} = {
   "mae": nn.Errors.MAE,
   "hinge": nn.Errors.HINGE,
   "squared hinge": nn.Errors.SQUARED_HINGE,
-  "log": nn.Errors.LOG,
   "huber": nn.Errors.HUBER,
   "modified huber": nn.Errors.MODIFIED_HUBER,
-  "cross entropy": nn.Errors.BCE,
+  "cross entropy": nn.Errors.BINARY_CROSS_ENTROPY,
   "exponential": nn.Errors.EXPONENTIAL,
   "poisson": nn.Errors.POISSON,
   "epsilon insensitive": nn.Errors.EPSILON_INSENSITIVE
