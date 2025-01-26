@@ -106,6 +106,10 @@ export interface ErrorFunction {
   error: (output: number, target: number) => number;
   der: (output: number, target: number) => number;
 }
+/** An eval function. */
+export interface EvalFunction {
+  eval: (output: number[], target: number[]) => number;
+}
 
 /** A node's activation function and its derivative. */
 export interface ActivationFunction {
@@ -120,6 +124,79 @@ export interface RegularizationFunction {
   der: (weight: number) => number;
 }
 
+export class Evals {
+  public static F1: EvalFunction = {
+    eval: (output: number[], target: number[]) => {
+      const epsilon = 1e-10; // to avoid division by zero
+      let tp = 0, fp = 0, fn = 0;
+      
+      for (let i = 0; i < output.length; i++) {
+        const predicted = output[i] > 0 ? 1 : -1;
+        const actual = target[i];
+
+        if (predicted === 1 && actual === 1) {
+          tp++;
+        } else if (predicted === 1 && actual === -1) {
+          fp++;
+        } else if (predicted === -1 && actual === 1) {
+          fn++;
+        }
+      }
+      
+      const precision = tp / (tp + fp + epsilon);
+      const recall = tp / (tp + fn + epsilon);
+      return 2 * (precision * recall) / (precision + recall + epsilon);
+    }
+  };
+
+  public static MATTHEWS_CORR_COEFF: EvalFunction = {
+    eval: (output: number[], target: number[]) => {
+      let tp = 0, fp = 0, fn = 0, tn = 0;
+      
+      for (let i = 0; i < output.length; i++) {
+        const predicted = output[i] > 0 ? 1 : -1;
+        const actual = target[i];
+        
+        if (predicted === 1 && actual === 1) tp++;
+        if (predicted === 1 && actual === -1) fp++;
+        if (predicted === -1 && actual === 1) fn++;
+        if (predicted === -1 && actual === -1) tn++;
+      }
+      
+      const numerator = (tp * tn) - (fp * fn);
+      const denominator = Math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
+      return denominator ? numerator / denominator : 0;
+    }
+  };
+  
+  public static R2: EvalFunction = {
+    eval: (output: number[], target: number[]) => {
+      let sumOfSquaresTotal = 0, sumOfSquaresResidual = 0;
+      const meanTarget = target.reduce((acc, val) => acc + val, 0) / target.length;
+      
+      for (let i = 0; i < output.length; i++) {
+        sumOfSquaresTotal += Math.pow(target[i] - meanTarget, 2);
+        sumOfSquaresResidual += Math.pow(target[i] - output[i], 2);
+      }
+      
+      return 1 - (sumOfSquaresResidual / sumOfSquaresTotal);
+    }
+  };
+  
+  public static RMSE: EvalFunction = {
+    eval: (output: number[], target: number[]) => {
+      let mse = 0;
+      
+      for (let i = 0; i < output.length; i++) {
+        mse += Math.pow(output[i] - target[i], 2);
+      }
+      
+      mse /= output.length;
+      return Math.sqrt(mse);
+    }
+  };
+}
+
 /** Built-in error functions */
 export class Errors {
   public static SQUARE: ErrorFunction = {
@@ -127,7 +204,7 @@ export class Errors {
                0.5 * Math.pow(output - target, 2),
     der: (output: number, target: number) => output - target
   };
-  public static MAE: ErrorFunction = {
+  public static ABS: ErrorFunction = {
     error: (output: number, target: number) =>
       Math.abs(output - target),
     der: (output: number, target: number) => {
@@ -325,7 +402,7 @@ export class Activations {
 }
 
 /** Built-in regularization functions */
-export class RegularizationFunction {
+export class Regularizations {
   public static L1: RegularizationFunction = {
     output: w => Math.abs(w),
     der: w => w < 0 ? -1 : (w > 0 ? 1 : 0)
@@ -552,7 +629,7 @@ export function updateWeights(network: Node[][], learningRate: number,
           // Further update the weight based on regularization.
           let newLinkWeight = link.weight -
               (learningRate * regularizationRate) * regulDer;
-          if (regularization === RegularizationFunction.L1 &&
+          if (regularization === Regularizations.L1 &&
               link.weight * newLinkWeight < 0) {
             // The weight crossed 0 due to the regularization term. Set it to 0.
             link.weight = 0;

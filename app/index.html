@@ -91,8 +91,8 @@ limitations under the License.
         <label for="lossFunc">Loss function</label>
         <div class="select">
           <select id="lossFunc">
-            <option value="square">MSE (L2 loss)</option>
-            <option value="mae">MAE (L1 loss)</option>
+            <option value="square">Squared (L2 loss)</option>
+            <option value="absolute">Absolute (L1 loss)</option>
             <option value="hinge">Hinge loss</option>
             <option value="squared hinge">Squared hinge</option>
             <option value="huber">Huber loss</option>
@@ -386,19 +386,33 @@ limitations under the License.
           </label>
         </div>
         <!-- Metrics section -->
-<!--
+
         <h4>Evaluation</h4>
-        <div class="metrics" style="margin-top:10px;">
-          <div class="output-stats precision">
-            <span>Precision</span>
-            <div class="value" id="eval-precision"></div>
+
+        <p>How we evaluate the performance depends on the task.</p>
+
+        <div class="metrics" id="eval-classification" style="margin-top:10px;">
+          <div class="output-stats">
+            <span>Average F1 score</span>
+            <div class="value" id="eval-f1"><span></span></div>
           </div>
-          <div class="output-stats recall">
-            <span>Recall</span>
-            <div class="value" id="eval-recall"></div>
+          <div class="output-stats">
+            <span>Matthews corr. coeff.</span>
+            <div class="value" id="eval-mcc"><span></span></div>
           </div>
         </div>
--->
+
+        <div class="metrics" id="eval-regression" style="margin-top:10px;">
+          <div class="output-stats">
+            <span>R<sup>2</sup> or explained variance</span>
+            <div class="value" id="eval-r2"><span></span></div>
+          </div>
+          <div class="output-stats">
+            <span>Root mean squared error</span>
+            <div class="value" id="eval-rmse"><span></span></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -531,11 +545,11 @@ limitations under the License.
 
     <div class="l--body">
       <h2>What kinds of estimators can I make?</h2>
-      <p>If you remove all the hidden layers, then the Playground can model some 'shallow' learning algorithms:</p>
+      <p>If you remove all the hidden layers, then the Playground can implement some 'shallow' learning algorithms:</p>
       <ul>
         <li>Regression
           <ul>
-            <li><strong>Linear regression:</strong> Choose MSE loss.</li>
+            <li><strong>Linear regression:</strong> Choose squared loss.</li>
             <li><strong>Ridge or Lasso:</strong> Add L2 or L1 regularization respectively.</li>
             <li><strong>Basis expansion:</strong> Add the other input features.</li>
             <li><strong>Robust regression:</strong> Use Huber loss.</li>
@@ -544,13 +558,13 @@ limitations under the License.
         </li>
         <li>Classification
           <ul>
-            <li><strong>Ridge classifier:</strong> Choose MSE loss and L2 regularization.</li>
+            <li><strong>Ridge classifier:</strong> Choose squared loss and L2 regularization.</li>
             <li><strong>Logistic regression:</strong> Choose log loss.</li>
             <li><strong>Support vector machine:</strong> Use hinge loss.</li>
           </ul>
         </li>
       </ul>
-      <p>Note that there is no activation function applied to the output layer. If you want to apply a nonlinear function to the output, add a single hidden layer with a single unit.</p>
+      <p>Note that for classification tasks, tanh activation is applied to the output layer to squeeze the result into (–1, +1). For regression, there is no activation on the output.</p>
     </div>
 
     <div class="l--body">

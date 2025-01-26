@@ -96,6 +96,10 @@ class Player {
   private isPlaying = false;
   private callback: (isPlaying: boolean) => void = null;
 
+  public isPlayingNow(): boolean {
+    return this.isPlaying;
+  }
+
   /** Plays/pauses the player. */
   playOrPause() {
     if (this.isPlaying) {
@@ -188,7 +192,26 @@ function makeGUI() {
   d3.select("#play-pause-button").on("click", function () {
     // Change the button's content.
     userHasInteracted();
+    const wasPlaying = player.isPlayingNow(); // Check if it was playing before toggle
     player.playOrPause();
+
+    // Disable the scores shile playing because they are not updated in real time.
+    // Reason is that (a) it's expensive and (b) it's not common to look at eval
+    // metrics during training, you normally use the loss.
+    if (wasPlaying) {
+        d3.select("#eval-r2").style("display", "inline");
+        d3.select("#eval-rmse").style("display", "inline");
+        d3.select("#eval-f1").style("display", "inline");
+        d3.select("#eval-mcc").style("display", "inline");
+      } else {
+        d3.select("#eval-r2").style("display", "none");
+        d3.select("#eval-rmse").style("display", "none");
+        d3.select("#eval-f1").style("display", "none");
+        d3.select("#eval-mcc").style("display", "none");
+      }
+
+      updateMetrics(network, testData);
+    
   });
 
   player.onPlayPause(isPlaying => {
@@ -196,12 +219,14 @@ function makeGUI() {
   });
 
   d3.select("#next-step-button").on("click", () => {
+
     player.pause();
     userHasInteracted();
     if (iter === 0) {
       simulationStarted();
     }
     oneStep();
+    updateMetrics(network, testData);
   });
 
   d3.select("#data-regen-button").on("click", () => {
@@ -309,7 +334,7 @@ function makeGUI() {
     userHasInteracted();
     updateUI();
   });
-  // Check/uncheck the checbox according to the current state.
+  // Check/uncheck the checkbox according to the current state.
   discretize.property("checked", state.discretize);
 
   let percTrain = d3.select("#percTrainData").on("input", function() {
@@ -391,11 +416,9 @@ function makeGUI() {
   // Check if the selected regularization is "none" and disable the lambda dropdown
   if (this.value === "none") {
     d3.select("#regularRate").property("disabled", true)
-      // .style("background-color", "#f0f0f0")
       .style("color", "#aaa");
   } else {
     d3.select("#regularRate").property("disabled", false)
-      // .style("background-color", "")
       .style("color", "");
   }
 
@@ -414,11 +437,9 @@ function makeGUI() {
   const initialRegValue = getKeyFromValue(regularizations, state.regularization);
   if (initialRegValue === "none") {
     d3.select("#regularRate").property("disabled", true)
-      // .style("background-color", "#f0f0f0")
       .style("color", "#aaa");
   } else {
     d3.select("#regularRate").property("disabled", false)
-      // .style("background-color", "")
       .style("color", "");
   }
   regularRate.property("value", state.regularizationRate);
@@ -471,6 +492,30 @@ function makeGUI() {
     d3.select("#article-text").style("display", "none");
     d3.select("div.more").style("display", "none");
     d3.select("header").style("display", "none");
+  }
+}
+
+function updateMetrics(network: nn.Node[][], dataPoints: Example2D[]) {
+  let outputs = [];
+  let targets = [];
+  for (let i = 0; i < dataPoints.length; i++) {
+    let dataPoint = dataPoints[i];
+    targets.push(dataPoint.label);
+    let input = constructInput(dataPoint.x, dataPoint.y);
+    let output = nn.forwardProp(network, input);
+    outputs.push(output);
+  }
+
+  if (state.problem === Problem.CLASSIFICATION) {
+    const f1Value = nn.Evals.F1.eval(outputs, targets).toFixed(2);
+    const mccValue = nn.Evals.MATTHEWS_CORR_COEFF.eval(outputs, targets).toFixed(2);
+    d3.select("#eval-f1 span").text(f1Value);
+    d3.select("#eval-mcc span").text(mccValue);
+  } else if (state.problem === Problem.REGRESSION) {
+    const r2Value = nn.Evals.R2.eval(outputs, targets).toFixed(2);
+    const rmseValue = nn.Evals.RMSE.eval(outputs, targets).toFixed(2);
+    d3.select("#eval-r2 span").text(r2Value);
+    d3.select("#eval-rmse span").text(rmseValue);
   }
 }
 
@@ -716,6 +761,7 @@ function drawNetwork(network: nn.Node[][]): void {
   let node = network[numLayers - 1][0];
   let cy = nodeIndexScale(0) + RECT_SIZE / 2;
   node2coord[node.id] = {cx, cy};
+
   // Draw links.
   for (let i = 0; i < node.inputLinks.length; i++) {
     let link = node.inputLinks[i];
@@ -968,13 +1014,6 @@ function updateUI(firstStep = false) {
   d3.select("#iter-number").text(addCommas(zeroPad(iter)));
   lineChart.addDataPoint([lossTrain, lossTest]);
 
-  // Update precision and recall, or R2 and RMSE.
-  // d3.select("#eval-precision").text(humanReadable(lossTrain));
-  // d3.select("#eval-recall").text(humanReadable(lossTest));
-  // d3.select("#eval-r2").text(humanReadable(lossTrain));
-  // d3.select("#eval-rmse").text(humanReadable(lossTest));
-
-
   // Inject HTML of Python code.
   d3.select("#network-as-python").html(nn.compileNetworkToPy(network));
 }
@@ -1041,6 +1080,14 @@ function reset(onStartup=false) {
   let suffix = state.numHiddenLayers !== 1 ? "s" : "";
   d3.select("#layers-label").text("Hidden layer" + suffix);
   d3.select("#num-layers").text(state.numHiddenLayers);
+
+  if (state.problem === Problem.REGRESSION) {
+    d3.select("#eval-classification").style("display", "none");
+    d3.select("#eval-regression").style("display", "block");
+  } else if (state.problem === Problem.CLASSIFICATION) {
+    d3.select("#eval-classification").style("display", "block");
+    d3.select("#eval-regression").style("display", "none");
+  }
 
   // Make a simple network.
   iter = 0;

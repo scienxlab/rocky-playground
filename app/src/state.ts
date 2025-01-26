@@ -37,16 +37,24 @@ export let activations: {[key: string]: nn.ActivationFunction} = {
 /** A map between names and regularization functions. */
 export let regularizations: {[key: string]: nn.RegularizationFunction} = {
   "none": null,
-  "L1": nn.RegularizationFunction.L1,
-  "L2": nn.RegularizationFunction.L2,
-  "elastic net": nn.RegularizationFunction.ElasticNet,
-  "huber": nn.RegularizationFunction.Huber
+  "L1": nn.Regularizations.L1,
+  "L2": nn.Regularizations.L2,
+  "elastic net": nn.Regularizations.ElasticNet,
+  "huber": nn.Regularizations.Huber
+};
+
+/** A map between names and eval functions. */
+export let evals: {[key: string]: nn.EvalFunction} = {
+  "f1": nn.Evals.F1,
+  "mcc": nn.Evals.MATTHEWS_CORR_COEFF,
+  "r2": nn.Evals.R2,
+  "rmse": nn.Evals.RMSE
 };
 
 /** A map between names and loss functions. */
 export let errors: {[key: string]: nn.ErrorFunction} = {
   "square": nn.Errors.SQUARE,
-  "mae": nn.Errors.MAE,
+  "absolute": nn.Errors.ABS,
   "hinge": nn.Errors.HINGE,
   "squared hinge": nn.Errors.SQUARED_HINGE,
   "huber": nn.Errors.HUBER,
