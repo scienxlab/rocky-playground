@@ -507,13 +507,13 @@ function updateMetrics(network: nn.Node[][], dataPoints: Example2D[]) {
   }
 
   if (state.problem === Problem.CLASSIFICATION) {
-    const f1Value = nn.Evals.F1.eval(outputs, targets).toFixed(2);
-    const mccValue = nn.Evals.MATTHEWS_CORR_COEFF.eval(outputs, targets).toFixed(2);
+    const f1Value = nn.Evals.F1.eval(outputs, targets).toFixed(3);
+    const mccValue = nn.Evals.MATTHEWS_CORR_COEFF.eval(outputs, targets).toFixed(3);
     d3.select("#eval-f1 span").text(f1Value);
     d3.select("#eval-mcc span").text(mccValue);
   } else if (state.problem === Problem.REGRESSION) {
-    const r2Value = nn.Evals.R2.eval(outputs, targets).toFixed(2);
-    const rmseValue = nn.Evals.RMSE.eval(outputs, targets).toFixed(2);
+    const r2Value = nn.Evals.R2.eval(outputs, targets).toFixed(3);
+    const rmseValue = nn.Evals.RMSE.eval(outputs, targets).toFixed(3);
     d3.select("#eval-r2 span").text(r2Value);
     d3.select("#eval-rmse span").text(rmseValue);
   }
