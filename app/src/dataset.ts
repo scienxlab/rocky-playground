@@ -192,15 +192,15 @@ export function classifyRocksTestData(numSamples: number, noise: number):
       return points;
     }
 
-    export function classifyPoroPermTrainData(numSamples: number, noise: number):
+export function classifyPoroPermTrainData(numSamples: number, noise: number):
     Example2D[] {
 
       let positive = poroPermData.filter(x => x.label ==  1);
       let negative = poroPermData.filter(x => x.label == -1);
 
-      let n = numSamples / 2;
-      let pos = positive.slice(-n);
-      let neg = negative.slice(-n);
+      let n = numSamples / 4.8; // Only 166 samples, cf usual 400
+      let pos = positive.slice(0, n);
+      let neg = negative.slice(0, n);
       let points: Example2D[] = pos.concat(neg);
       return points;
     }
@@ -211,7 +211,7 @@ export function classifyPoroPermTestData(numSamples: number, noise: number):
       let positive = poroPermData.filter(x => x.label ==  1);
       let negative = poroPermData.filter(x => x.label == -1);
 
-      let n = numSamples / 2;
+      let n = numSamples / 4.8; // Only 166 samples, cf usual 400
       let pos = positive.slice(-n);
       let neg = negative.slice(-n);
       let points: Example2D[] = pos.concat(neg);
