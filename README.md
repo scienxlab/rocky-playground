@@ -4,6 +4,8 @@ This repo is a fork of Agile's (archived) fork, which was a fork of Google's ori
 
 The app is currently deployed at [playground.scienxlab.org](https://playground.scienxlab.org).
 
+[![Deploy](https://github.com/scienxlab/rocky-playground/actions/workflows/deploy.yml/badge.svg)](https://github.com/scienxlab/rocky-playground/actions/workflows/deploy.yml)
+
 ## About
 
 Rocky Playground is an interactive visualization of neural networks, written in
