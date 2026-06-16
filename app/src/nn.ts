@@ -214,8 +214,10 @@ export class Errors {
   public static HINGE: ErrorFunction = {
     error: (output: number, target: number) =>
       Math.max(0, 1 - output * target),
-    der: (output: number, target: number) =>
-      1 - output * target <= 0 ? 0 : -target
+    der: (output: number, target: number) => {
+      const margin = 1 - output * target;
+      return margin <= 0 ? 0 : -2 * target * margin;
+    }
   };
   public static SQUARED_HINGE: ErrorFunction = {
     error: (output: number, target: number) => {
@@ -223,10 +225,9 @@ export class Errors {
       const hingeError = Errors.HINGE.error(output, target);
       return Math.pow(hingeError, 2); // Square the hinge loss
     },
-    der: (output: number, target: number) => {
-      const hingeDer = Errors.HINGE.der(output, target);
-      return hingeDer <= 0 ? 0 : 2 * hingeDer; // Multiply by 2 :)
-    }
+    der: (output: number, target: number) =>
+      // d/do (H^2) = 2 * H * dH/do, where H is the hinge loss.
+      2 * Errors.HINGE.error(output, target) * Errors.HINGE.der(output, target)
   };
   public static HUBER: ErrorFunction = {
     error: (output: number, target: number) => {
@@ -246,14 +247,15 @@ export class Errors {
   };
   public static MODIFIED_HUBER: ErrorFunction = {
     error: (output: number, target: number) => {
-      const hinge = Math.max(0, 1 - target * output); // Hinge loss term
-      const squaredError = 0.5 * Math.pow(target - output, 2); // Squared error term
-      return hinge + squaredError; // Combine both terms
+      // z = target * output. Squared hinge near the margin, linear beyond z < -1.
+      const z = target * output;
+      return z >= -1 ? Math.pow(Math.max(0, 1 - z), 2) : -4 * z;
     },
     der: (output: number, target: number) => {
-      const hingeGrad = target * (output < 1 ? -1 : 0); // Derivative of the hinge loss
-      const squaredErrorGrad = output - target; // Derivative of the squared error term
-      return hingeGrad + squaredErrorGrad; // Combine the gradients
+      const z = target * output;
+      if (z >= 1) { return 0; }
+      if (z >= -1) { return -2 * target * (1 - z); }
+      return -4 * target;
     }
   };
   public static BINARY_CROSS_ENTROPY: ErrorFunction = {
@@ -266,7 +268,9 @@ export class Errors {
     der: (output: number, target: number) => {
       const target01 = (target + 1) / 2;
       const output01 = (output + 1) / 2;
-      return (output01 - target01) / (output01 * (1 - output01));
+      // (output01 - target01) / (output01 * (1 - output01)) is dE/d(output01);
+      // chain rule by d(output01)/d(output) = 1/2 to get dE/d(output).
+      return 0.5 * (output01 - target01) / (output01 * (1 - output01));
     }
   };
   public static EXPONENTIAL: ErrorFunction = {
