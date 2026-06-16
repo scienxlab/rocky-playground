@@ -93,8 +93,6 @@ export class Node {
       return "X1_squared";
     } else if (this.id == "ySquared") {
       return "X2_squared";
-    } else if (this.id == "y") {
-      return "X2";
     } else {
       return "a" + this.id;
     }
@@ -335,10 +333,7 @@ export class Activations {
   };
   public static ELU: ActivationFunction = {
     output: x => x <= 0 ? 0.1 * (Math.exp(x) - 1) : x,
-    der: x => {
-      let output = Activations.ELU.output(x);
-      return output + 0.1;
-    },
+    der: x => x > 0 ? 1 : Activations.ELU.output(x) + 0.1,
     compileToPy: (input: string) => `ELU(${input})`
   };
   public static SOFTPLUS: ActivationFunction = {
@@ -360,8 +355,8 @@ export class Activations {
       return x * output;
     },
     der: x => {
-      let output = Activations.SWISH.output(x);
-      return output * (1 - output);
+      let output = Activations.SIGMOID.output(x);
+      return output + x * output * (1 - output);
     },
     compileToPy: (input: string) => `${input} * SIGMOID(${input})`
   };
