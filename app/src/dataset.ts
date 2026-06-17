@@ -57,6 +57,61 @@ export function shuffle(array: any[]): void {
 
 export type DataGenerator = (numSamples: number, noise: number) => Example2D[];
 
+/** The ways a feature or the label can be scaled on the way into the model. */
+export type ScalingMode = "none" | "normalize" | "standardize";
+
+/**
+ * Scales a single field across train and test data. Statistics are fit on the
+ * training values only and applied to both sets, so the two share one
+ * coordinate space and no test information leaks into the transform. Mutates
+ * the points in place.
+ *
+ *  - "none":        identity.
+ *  - "normalize":   min-max into [-1, 1].
+ *  - "standardize": z-score (mean 0, std 1).
+ */
+function scaleField(trainData: Example2D[], testData: Example2D[],
+    mode: ScalingMode,
+    get: (d: Example2D) => number,
+    set: (d: Example2D, v: number) => void): void {
+  if (mode === "none") {
+    return;
+  }
+  let values = trainData.map(get);
+  let transform: (v: number) => number;
+  if (mode === "normalize") {
+    let min = d3.min(values);
+    let max = d3.max(values);
+    let range = max - min;
+    transform = range === 0 ? (() => 0) : (v => 2 * (v - min) / range - 1);
+  } else { // standardize
+    let mean = d3.mean(values);
+    let std = d3.deviation(values);
+    transform = (std == null || std === 0) ? (() => 0) : (v => (v - mean) / std);
+  }
+  trainData.forEach(d => set(d, transform(get(d))));
+  testData.forEach(d => set(d, transform(get(d))));
+}
+
+/**
+ * Scales the inputs (x, y, each independently) and, optionally, the output
+ * (label) of a dataset. Output scaling is skipped unless scaleOutput is true,
+ * since for classification the label is a +/-1 class indicator that must not
+ * be rescaled.
+ */
+export function scaleData(trainData: Example2D[], testData: Example2D[],
+    inputMode: ScalingMode, outputMode: ScalingMode,
+    scaleOutput: boolean): void {
+  scaleField(trainData, testData, inputMode,
+      d => d.x, (d, v) => d.x = v);
+  scaleField(trainData, testData, inputMode,
+      d => d.y, (d, v) => d.y = v);
+  if (scaleOutput) {
+    scaleField(trainData, testData, outputMode,
+        d => d.label, (d, v) => d.label = v);
+  }
+}
+
 export function classifyTwoGaussData(numSamples: number, noise: number):
     Example2D[] {
   let points: Example2D[] = [];

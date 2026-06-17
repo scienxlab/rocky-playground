@@ -115,24 +115,64 @@ export class HeatMap {
     }
 
     if (this.settings.showAxes) {
-      let xAxis = d3.svg.axis()
-        .scale(this.xScale)
-        .orient("bottom");
-
-      let yAxis = d3.svg.axis()
-        .scale(this.yScale)
-        .orient("right");
-
       this.svg.append("g")
         .attr("class", "x axis")
-        .attr("transform", `translate(0,${height - 2 * padding})`)
-        .call(xAxis);
+        .attr("transform", `translate(0,${height - 2 * padding})`);
 
       this.svg.append("g")
         .attr("class", "y axis")
-        .attr("transform", "translate(" + (width - 2 * padding) + ",0)")
-        .call(yAxis);
+        .attr("transform", "translate(" + (width - 2 * padding) + ",0)");
+
+      this.renderAxes();
     }
+  }
+
+  /**
+   * Builds an axis with integer-only tick labels. Fractional ticks made the
+   * (right-hand) labels too wide and they were clipped; integers also read
+   * more cleanly. For small domains we place a tick at each integer; for wide
+   * domains we let d3 choose nice (integer) ticks to avoid overcrowding.
+   */
+  private integerAxis(scale, orient: string) {
+    let axis = d3.svg.axis().scale(scale).orient(orient)
+        .tickFormat(d3.format("d"));
+    let domain = scale.domain();
+    let start = Math.ceil(Math.min(domain[0], domain[1]));
+    let end = Math.floor(Math.max(domain[0], domain[1]));
+    if (end - start <= 14) {
+      let ticks = [];
+      for (let v = start; v <= end; v++) {
+        ticks.push(v);
+      }
+      axis.tickValues(ticks);
+    }
+    return axis;
+  }
+
+  private renderAxes() {
+    if (!this.settings.showAxes || this.svg == null) {
+      return;
+    }
+    this.svg.select("g.x.axis").call(this.integerAxis(this.xScale, "bottom"));
+    this.svg.select("g.y.axis").call(this.integerAxis(this.yScale, "right"));
+  }
+
+  /**
+   * Re-points the x/y scales at a new data domain and redraws the axes.
+   * The grid resolution (numSamples) is unchanged, so a larger domain just
+   * means each cell covers more of the data space - the cell count, and
+   * therefore the cost of drawing the background, stays fixed.
+   */
+  updateDomain(xDomain: [number, number], yDomain: [number, number]): void {
+    this.xScale.domain(xDomain);
+    this.yScale.domain(yDomain);
+    this.renderAxes();
+  }
+
+  /** Re-points the color scale at a new value domain (e.g. when the output
+   *  scaling changes the range of the network output and labels). */
+  updateColorDomain(domain: [number, number]): void {
+    this.color.domain(domain);
   }
 
   updateTestPoints(points: Example2D[]): void {

@@ -220,9 +220,6 @@ limitations under the License.
           <div class="dataset" title="Spiral">
             <canvas class="data-thumbnail" data-dataset="spiral"></canvas>
           </div>
-          <div class="dataset" title="Moons">
-            <canvas class="data-thumbnail" data-dataset="moons"></canvas>
-          </div>
           <div class="dataset" title="Plane">
             <canvas class="data-thumbnail" data-regDataset="reg-plane"></canvas>
           </div>
@@ -262,11 +259,27 @@ limitations under the License.
             <input class="mdl-slider mdl-js-slider" type="range" id="noise" min="0" max="50" step="5">
           </p>
         </div>
-        <div class="ui-batchSize">
-          <label for="batchSize">Batch size:&nbsp;<span class="value">XX</span></label>
-          <p class="slider">
-            <input class="mdl-slider mdl-js-slider" type="range" id="batchSize" min="1" max="30" step="1">
-          </p>
+        <div class="ui-scaling">
+          <div class="control ui-inputScaling">
+            <label for="inputScaling">Input scaling</label>
+            <div class="select">
+              <select id="inputScaling">
+                <option value="none">None</option>
+                <option value="normalize">Normalize (&minus;1, 1)</option>
+                <option value="standardize">Standardize</option>
+              </select>
+            </div>
+          </div>
+          <div class="control ui-outputScaling">
+            <label for="outputScaling">Output scaling</label>
+            <div class="select">
+              <select id="outputScaling">
+                <option value="none">None</option>
+                <option value="normalize">Normalize (&minus;1, 1)</option>
+                <option value="standardize">Standardize</option>
+              </select>
+            </div>
+          </div>
         </div>
           <button class="basic-button" id="data-regen-button" title="Regenerate data">
             Regenerate
@@ -316,6 +329,12 @@ limitations under the License.
           <div class="label">
             The outputs are mixed with varying <b>weights</b>, shown by the thickness of the lines.
           </div>
+        </div>
+        <div class="ui-batchSize">
+          <label for="batchSize">Batch size:&nbsp;<span class="value">XX</span></label>
+          <p class="slider">
+            <input class="mdl-slider mdl-js-slider" type="range" id="batchSize" min="1" max="30" step="1">
+          </p>
         </div>
       </div>
     </div>

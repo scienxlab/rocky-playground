@@ -1050,3 +1050,76 @@ footer .links a:hover {
 #main-part .mdl-slider.is-upgraded:focus:not(:active)::-webkit-slider-thumb {
   box-shadow: 0 0 0 10px rgba(0,0,0, 0.12);
 }
+
+/* Input/output scaling dropdowns in the data column. Stacked vertically and
+   styled to match the idiomatic dropdowns in #top-controls. */
+.ui-scaling {
+  margin: 10px 0;
+}
+.ui-scaling .control {
+  margin-bottom: 10px;
+}
+.ui-scaling .control label {
+  color: #777;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+  font-weight: 300;
+}
+.ui-scaling .control .select {
+  position: relative;
+}
+.ui-scaling .control select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  display: block;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 6px 0;
+  width: 100%;
+  font-size: 14px;
+  border-bottom: solid 1px #ccc;
+  color: #333;
+  outline: none;
+}
+.ui-scaling .control select:focus {
+  border-bottom-color: #184e2f;
+}
+.ui-scaling .control .select::after {
+  content: "arrow_drop_down";
+  color: #999;
+  font-family: 'Material Icons';
+  font-size: 18px;
+  position: absolute;
+  right: 0;
+  top: 6px;
+  pointer-events: none;
+}
+.ui-scaling .control.disabled {
+  opacity: 0.5;
+}
+
+/* Batch size lives in the Features column, positioned below the input units.
+   #network is absolutely positioned, so this shares its origin with the
+   input nodes (which span roughly 0-255px from #network's top). */
+#network .ui-batchSize {
+  position: absolute;
+  top: 265px;
+  left: 0;
+  width: 150px;
+}
+/* Mirror the negative margin used by .data.column sliders so the track lines
+   up with the "Batch size" label rather than sitting indented. */
+#network .ui-batchSize p.slider {
+  margin: 0 -25px;
+}
+
+/* Even out the spacing around the train:test and noise sliders. */
+#main-part .data.column .ui-percTrainData {
+  margin-top: 16px;
+}
+#main-part .data.column .ui-noise {
+  margin-top: -16px;
+}

@@ -159,6 +159,13 @@ export let problems = {
   "regression": Problem.REGRESSION
 };
 
+/** A map between names and data scaling modes (see dataset.ScalingMode). */
+export let scalings: {[key: string]: dataset.ScalingMode} = {
+  "none": "none",
+  "normalize": "normalize",
+  "standardize": "standardize"
+};
+
 export interface Property {
   name: string;
   type: Type;
@@ -178,6 +185,8 @@ export class State {
     {name: "regularizationRate", type: Type.NUMBER},
     {name: "errorFunc", type: Type.OBJECT, keyMap: errors},
     {name: "problem", type: Type.OBJECT, keyMap: problems},
+    {name: "inputScaling", type: Type.OBJECT, keyMap: scalings},
+    {name: "outputScaling", type: Type.OBJECT, keyMap: scalings},
     {name: "noise", type: Type.NUMBER},
     {name: "networkShape", type: Type.ARRAY_NUMBER},
     {name: "seed", type: Type.STRING},
@@ -208,6 +217,8 @@ export class State {
   regularization: nn.RegularizationFunction = null;
   errorFunc = nn.Errors.SQUARE;
   problem = Problem.CLASSIFICATION;
+  inputScaling: dataset.ScalingMode = "none";
+  outputScaling: dataset.ScalingMode = "none";
   initZero = false;
   hideText = false;
   collectStats = false;

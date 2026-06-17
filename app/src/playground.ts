@@ -26,7 +26,7 @@ import {
   getKeyFromValue,
   Problem
 } from "./state";
-import {Example2D, shuffle} from "./dataset";
+import {Example2D, shuffle, scaleData} from "./dataset";
 import {AppendingLineChart} from "./linechart";
 import * as d3 from 'd3';
 
@@ -84,6 +84,8 @@ let HIDABLE_CONTROLS = [
   ["Regularization rate", "regularizationRate"],
   ["Loss function", "lossFunc"],
   ["Problem type", "problem"],
+  ["Input scaling", "inputScaling"],
+  ["Output scaling", "outputScaling"],
   ["Which dataset", "dataset"],
   ["Ratio train data", "percTrainData"],
   ["Noise level", "noise"],
@@ -157,10 +159,12 @@ state.getHiddenProps().forEach(prop => {
 
 let boundary: {[id: string]: number[][]} = {};
 let selectedNodeId: string = null;
-// Plot the heatmap.
+// Plot the heatmap. The domains track the (possibly scaled) data extent and
+// are updated by updateDataDomain(); see generateData().
 let xDomain: [number, number] = [-6, 6];
+let yDomain: [number, number] = [-6, 6];
 let heatMap =
-    new HeatMap(300, DENSITY, xDomain, xDomain, d3.select("#heatmap"),
+    new HeatMap(300, DENSITY, xDomain, yDomain, d3.select("#heatmap"),
         {showAxes: true});
 let linkWidthScale = d3.scale.linear()
   .domain([0, 5])
@@ -170,6 +174,10 @@ let colorScale = d3.scale.linear<string, number>()
                      .domain([-1, 0, 1])
                      .range(["#325396", "#e8eaeb", "#16afca"])
                      .clamp(true);
+// Scale behind the gradient colorbar legend. Its domain tracks the output
+// range (see outputColorDomain), so the legend stays meaningful when the
+// output scaling changes.
+let colorMapScale = d3.scale.linear().domain([-1, 1]).range([0, 144]);
 let iter = 0;
 let trainData: Example2D[] = [];
 let testData: Example2D[] = [];
@@ -456,6 +464,7 @@ function makeGUI() {
 
   let problem = d3.select("#problem").on("change", function() {
     state.problem = problems[this.value];
+    updateOutputScalingAvailability();
     generateData();
     drawDatasetThumbnails();
     parametersChanged = true;
@@ -463,17 +472,41 @@ function makeGUI() {
   });
   problem.property("value", getKeyFromValue(problems, state.problem));
 
-  // Add scale to the gradient color map.
-  let x = d3.scale.linear().domain([-1, 1]).range([0, 144]);
-  let xAxis = d3.svg.axis()
-    .scale(x)
-    .orient("bottom")
-    .tickValues([-1, 0, 1])
-    .tickFormat(d3.format("d"));
-  d3.select("#colormap g.core").append("g")
-    .attr("class", "x axis")
-    .attr("transform", "translate(0,10)")
-    .call(xAxis);
+  // Input / output scaling dropdowns.
+  function wireScaling(selectId: string, stateProp: string) {
+    d3.select(`#${selectId}`).on("change", function() {
+      state[stateProp] = this.value;
+      state.serialize();
+      userHasInteracted();
+      parametersChanged = true;
+      if (customLoaded) {
+        // Re-scale the uploaded data from scratch.
+        loadAndRenderCustomData(customDataset);
+      } else {
+        // Keep the same sample (don't reseed); just re-scale and redraw.
+        generateData(true);
+        reset();
+      }
+    });
+    // Reflect the current state in the dropdown.
+    d3.select(`#${selectId}`).property("value", state[stateProp]);
+  }
+
+  // Output scaling only applies to regression; classification labels are
+  // +/-1 class indicators, so the control is disabled there.
+  function updateOutputScalingAvailability() {
+    let isRegression = state.problem === Problem.REGRESSION;
+    d3.select(".ui-outputScaling").classed("disabled", !isRegression);
+    d3.select("#outputScaling").property("disabled", !isRegression)
+        .style("color", isRegression ? "" : "#aaa");
+  }
+
+  wireScaling("inputScaling", "inputScaling");
+  wireScaling("outputScaling", "outputScaling");
+  updateOutputScalingAvailability();
+
+  // Add scale to the gradient color map (domain updated by updateColorMap).
+  updateColorMap([-1, 1]);
 
   // Listen for css-responsive changes and redraw the svg network.
 
@@ -654,7 +687,7 @@ function drawNode(cx: number, cy: number, nodeId: string, isInput: boolean,
     div.classed(activeOrNotClass, true);
   }
   let nodeHeatMap = new HeatMap(RECT_SIZE, DENSITY / 10, xDomain,
-      xDomain, div, {noSvg: true});
+      yDomain, div, {noSvg: true});
   div.datum({heatmap: nodeHeatMap, id: nodeId});
 
 }
@@ -934,7 +967,7 @@ function updateDecisionBoundary(network: nn.Node[][], firstTime: boolean) {
     }
   }
   let xScale = d3.scale.linear().domain([0, DENSITY - 1]).range(xDomain);
-  let yScale = d3.scale.linear().domain([DENSITY - 1, 0]).range(xDomain);
+  let yScale = d3.scale.linear().domain([DENSITY - 1, 0]).range(yDomain);
 
   let i = 0, j = 0;
   for (i = 0; i < DENSITY; i++) {
@@ -1132,6 +1165,10 @@ function initTutorial() {
 
 function drawDatasetThumbnails(custom=null) {
   function renderThumbnail(canvas, dataGenerator) {
+    // Some datasets (e.g. moons) stay in the data map but have no thumbnail.
+    if (canvas == null) {
+      return;
+    }
     let w = 100;
     let h = 100;
     canvas.setAttribute("width", w);
@@ -1145,6 +1182,9 @@ function drawDatasetThumbnails(custom=null) {
     d3.select(canvas.parentNode).style("display", null);
   }
   function renderPoints(canvas, data) {
+    if (canvas == null) {
+      return;
+    }
     let w = 100;
     let h = 100;
     canvas.setAttribute("width", w);
@@ -1239,16 +1279,91 @@ function hideControls() {
     .attr("href", window.location.href);
 }
 
-function meanStdDev(array) {
-  let mean = d3.mean(array);
-  let stdDev = d3.deviation(array);
-  return [mean, stdDev];
+/** Returns a fresh copy of a data point, so scaling never mutates the cached
+ *  JSON datasets (whose objects are returned by reference). */
+function clonePoint(d: Example2D): Example2D {
+  return {x: d.x, y: d.y, label: d.label};
 }
 
-function minMax(array) {
-  let min = d3.min(array);
-  let max = d3.max(array);
-  return [min, max];
+/** Fits a padded [min, max] domain to a set of values, for the "none" scaling
+ *  mode where the data can occupy any range. */
+function axisDomain(values: number[]): [number, number] {
+  let min = d3.min(values);
+  let max = d3.max(values);
+  if (min == null || max == null) {
+    return [-6, 6];
+  }
+  if (min === max) {
+    return [min - 1, max + 1];
+  }
+  let pad = (max - min) * 0.05;
+  return [min - pad, max + pad];
+}
+
+/**
+ * Computes the per-axis data domain for the heatmap given the current input
+ * scaling. Normalize and standardize have well-defined ranges; "none" fits
+ * the domain to the data. The grid resolution (DENSITY) is fixed regardless,
+ * so a wide domain just yields coarser cells, never more of them.
+ */
+function computeDomains(points: Example2D[]):
+    [[number, number], [number, number]] {
+  if (state.inputScaling === "normalize") {
+    return [[-1, 1], [-1, 1]];
+  }
+  if (state.inputScaling === "standardize") {
+    return [[-3, 3], [-3, 3]];
+  }
+  return [axisDomain(points.map(p => p.x)), axisDomain(points.map(p => p.y))];
+}
+
+/** Resizes the visible data space to the current (scaled) data. */
+function updateDataDomain() {
+  [xDomain, yDomain] = computeDomains(trainData.concat(testData));
+  heatMap.updateDomain(xDomain, yDomain);
+}
+
+/** The output color domain: symmetric about 0, spanning the label range. This
+ *  makes the colorbar track the output scaling (and the data): +/-1 for
+ *  classification, ~+/-1 for normalized output, the z-score range for
+ *  standardized output, and the raw range when unscaled. */
+function outputColorDomain(): [number, number] {
+  // Fit on training data only (like the scaling stats). Using test data too
+  // would let test points transformed past the train range bump the bound up
+  // (e.g. normalized output reading +/-2 instead of the intended +/-1).
+  let m = d3.max(trainData.map(p => Math.abs(p.label)));
+  if (m == null || m === 0) {
+    m = 1;
+  }
+  // Round up to an integer so the colorbar ticks are whole numbers (which fit
+  // the legend without clipping) and no value falls outside the color range.
+  m = Math.ceil(m);
+  return [-m, m];
+}
+
+/** Updates the gradient colorbar legend to span the given value domain. */
+function updateColorMap(domain: [number, number]) {
+  colorMapScale.domain(domain);
+  let xAxis = d3.svg.axis()
+    .scale(colorMapScale)
+    .orient("bottom")
+    .tickValues([domain[0], 0, domain[1]])
+    .tickFormat(d3.format("d"));
+  let axis = d3.select("#colormap g.core").select("g.x.axis");
+  if (axis.empty()) {
+    axis = d3.select("#colormap g.core").append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0,10)");
+  }
+  axis.call(xAxis);
+}
+
+/** Repoints the output color scale and the colorbar legend at the current
+ *  output range. */
+function updateOutputColors() {
+  let domain = outputColorDomain();
+  heatMap.updateColorDomain(domain);
+  updateColorMap(domain);
 }
 
 function generateData(firstTime = false, custom=null) {
@@ -1259,44 +1374,38 @@ function generateData(firstTime = false, custom=null) {
     userHasInteracted();
   }
   Math.seedrandom(state.seed);
-  let numSamples = (state.problem === Problem.REGRESSION) ?
-      NUM_SAMPLES_REGRESS : NUM_SAMPLES_CLASSIFY;
-  let generator = state.problem === Problem.CLASSIFICATION ?
-      state.dataset : state.regDataset;
-  let numTrainSamples = numSamples * state.percTrainData / 100;
-  let numTestSamples = numSamples * (100 - state.percTrainData) / 100;
-  trainData = generator.trainGenerator(numTrainSamples, state.noise / 100);
-  testData = generator.testGenerator(numTestSamples, state.noise / 100);
 
-  if(custom!=null){
-    let data = custom;
-
-    // Shuffle the data in-place.
+  if (custom != null) {
+    // Work on copies so re-selecting custom data doesn't re-scale in place.
+    let data = custom.map(clonePoint);
     shuffle(data);
-
-    // Split out train data.
     let splitIndex = Math.floor(data.length * state.percTrainData / 100);
     trainData = data.slice(0, splitIndex);
-
-    // Scale it.
-    // TODO: Multiplied by 2 because data space is -6, 6.
-    let [mx, sx] = meanStdDev(trainData.map(d => d.x));
-    let [my, sy] = meanStdDev(trainData.map(d => d.y));
-    let [mi, ma] = minMax(trainData.map(d => d.label));
-    trainData.forEach(d => {d.x = 2 * (d.x - mx) / sx;  // TODO
-                            d.y = 2 * (d.y - my) / sy;
-                            d.label = 2 * (d.label - mi) / (ma - mi) - 1;
-                           });
-
-    // Split out and scale test data.
-    // TODO: Multiplied by 2 because data space is -6, 6.
     testData = data.slice(splitIndex);
-    testData.forEach(d => {d.x = 2 * (d.x - mx) / sx;  // TODO
-                           d.y = 2 * (d.y - my) / sy;
-                           d.label = 2 * (d.label - mi) / (ma - mi) - 1;
-                          });
+  } else {
+    let numSamples = (state.problem === Problem.REGRESSION) ?
+        NUM_SAMPLES_REGRESS : NUM_SAMPLES_CLASSIFY;
+    let generator = state.problem === Problem.CLASSIFICATION ?
+        state.dataset : state.regDataset;
+    let numTrainSamples = numSamples * state.percTrainData / 100;
+    let numTestSamples = numSamples * (100 - state.percTrainData) / 100;
+    trainData = generator.trainGenerator(numTrainSamples, state.noise / 100)
+        .map(clonePoint);
+    testData = generator.testGenerator(numTestSamples, state.noise / 100)
+        .map(clonePoint);
   }
-  
+
+  // Apply the user's input/output scaling. Stats are fit on the training data
+  // and applied to both sets. The output (label) is only scaled for
+  // regression; classification labels stay as +/-1 class indicators.
+  scaleData(trainData, testData, state.inputScaling, state.outputScaling,
+      state.problem === Problem.REGRESSION);
+
+  // Resize the data space to fit the (possibly rescaled) data.
+  updateDataDomain();
+  // Track the output range in the heatmap colors and the colorbar legend.
+  updateOutputColors();
+
   heatMap.updatePoints(trainData);
   heatMap.updateTestPoints(state.showTestData ? testData : []);
 }
