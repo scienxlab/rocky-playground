@@ -200,26 +200,10 @@ function makeGUI() {
   d3.select("#play-pause-button").on("click", function () {
     // Change the button's content.
     userHasInteracted();
-    const wasPlaying = player.isPlayingNow(); // Check if it was playing before toggle
     player.playOrPause();
-
-    // Disable the scores shile playing because they are not updated in real time.
-    // Reason is that (a) it's expensive and (b) it's not common to look at eval
-    // metrics during training, you normally use the loss.
-    if (wasPlaying) {
-        d3.select("#eval-r2").style("display", "inline");
-        d3.select("#eval-rmse").style("display", "inline");
-        d3.select("#eval-f1").style("display", "inline");
-        d3.select("#eval-mcc").style("display", "inline");
-      } else {
-        d3.select("#eval-r2").style("display", "none");
-        d3.select("#eval-rmse").style("display", "none");
-        d3.select("#eval-f1").style("display", "none");
-        d3.select("#eval-mcc").style("display", "none");
-      }
-
-      updateMetrics(network, testData);
-    
+    // Scores now update every epoch (see oneStep), so they stay current while
+    // playing - just refresh once for the paused case.
+    updateMetrics(network, testData);
   });
 
   player.onPlayPause(isPlaying => {
@@ -234,7 +218,6 @@ function makeGUI() {
       simulationStarted();
     }
     oneStep();
-    updateMetrics(network, testData);
   });
 
   d3.select("#data-regen-button").on("click", () => {
@@ -1085,6 +1068,8 @@ function oneStep(): void {
   lossTrain = getLoss(network, trainData, state.errorFunc);
   lossTest = getLoss(network, testData, state.errorFunc);
   updateUI();
+  // Refresh the evaluation scores each epoch so they track training live.
+  updateMetrics(network, testData);
 }
 
 export function getOutputWeights(network: nn.Node[][]): number[] {
