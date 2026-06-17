@@ -41,6 +41,14 @@ export class HeatMap {
   private color;
   private canvas;
   private svg;
+  private padding: number;
+  private tooltip;
+  /** Optional callback returning the model output at data coordinates (x, y);
+   *  set via onValueHover() to show predictions on hover. */
+  private valueProvider: (x: number, y: number) => number = null;
+  /** Currently displayed points, so hover can report their target values. */
+  private trainPoints: Example2D[] = [];
+  private testPoints: Example2D[] = [];
 
   constructor(
       width: number, numSamples: number, xDomain: [number, number],
@@ -49,6 +57,7 @@ export class HeatMap {
     this.numSamples = numSamples;
     let height = width;
     let padding = userSettings.showAxes ? 20 : 0;
+    this.padding = padding;
 
     if (userSettings != null) {
       // overwrite the defaults with the user-specified settings.
@@ -112,6 +121,18 @@ export class HeatMap {
 
       this.svg.append("g").attr("class", "train");
       this.svg.append("g").attr("class", "test");
+
+      // Transparent overlay (beneath the point circles) that captures hover and
+      // reports either the nearest point's target or the model output. Circles
+      // are set to pointer-events:none so every move lands here.
+      let plotWidth = width - 2 * padding;
+      let plotHeight = height - 2 * padding;
+      this.tooltip = container.append("div").attr("class", "heatmap-tooltip");
+      this.svg.insert("rect", ":first-child")
+        .attr({width: plotWidth, height: plotHeight})
+        .style({fill: "none", "pointer-events": "all"})
+        .on("mousemove", () => this.showHoverValue(d3.mouse(this.svg.node())))
+        .on("mouseleave", () => this.tooltip.style("display", "none"));
     }
 
     if (this.settings.showAxes) {
@@ -175,10 +196,53 @@ export class HeatMap {
     this.color.domain(domain);
   }
 
+  /** Registers a callback that returns the model output at data coordinates,
+   *  used to show predictions when hovering the heatmap background. */
+  onValueHover(provider: (x: number, y: number) => number): void {
+    this.valueProvider = provider;
+  }
+
+  /** Shows the target of the nearest data point, or (failing that) the model
+   *  output at the hovered location. mouse is in the svg group's coordinates. */
+  private showHoverValue(mouse: [number, number]) {
+    let mx = mouse[0];
+    let my = mouse[1];
+    let points = this.trainPoints.concat(this.testPoints);
+    let nearest: Example2D = null;
+    let nearestDist = Infinity;
+    for (let i = 0; i < points.length; i++) {
+      let dx = this.xScale(points[i].x) - mx;
+      let dy = this.yScale(points[i].y) - my;
+      let dist = dx * dx + dy * dy;
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearest = points[i];
+      }
+    }
+    let hitRadius = 6;
+    let text: string;
+    if (nearest != null && nearestDist <= hitRadius * hitRadius) {
+      text = "target " + nearest.label.toFixed(3);
+    } else if (this.valueProvider != null) {
+      text = "output " +
+          this.valueProvider(this.xScale.invert(mx), this.yScale.invert(my))
+              .toFixed(3);
+    } else {
+      this.tooltip.style("display", "none");
+      return;
+    }
+    this.tooltip.style({
+      display: "block",
+      left: `${mx + this.padding + 10}px`,
+      top: `${my + this.padding + 10}px`
+    }).text(text);
+  }
+
   updateTestPoints(points: Example2D[]): void {
     if (this.settings.noSvg) {
       throw Error("Can't add points since noSvg=true");
     }
+    this.testPoints = points;
     this.updateCircles(this.svg.select("g.test"), points);
   }
 
@@ -186,6 +250,7 @@ export class HeatMap {
     if (this.settings.noSvg) {
       throw Error("Can't add points since noSvg=true");
     }
+    this.trainPoints = points;
     this.updateCircles(this.svg.select("g.train"), points);
   }
 
@@ -231,8 +296,10 @@ export class HeatMap {
     // Attach data to initially empty selection.
     let selection = container.selectAll("circle").data(points);
 
-    // Insert elements to match length of points array.
-    selection.enter().append("circle").attr("r", 3);
+    // Insert elements to match length of points array. Circles don't capture
+    // pointer events so the overlay rect handles all hover detection.
+    selection.enter().append("circle").attr("r", 3)
+        .style("pointer-events", "none");
 
     // Update points to be in the correct position.
     selection

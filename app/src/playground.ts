@@ -491,6 +491,10 @@ function makeGUI() {
   // Add scale to the gradient color map (domain updated by updateColorMap).
   updateColorMap([-1, 1]);
 
+  // Show the model output when hovering the heatmap background (data points
+  // report their target value instead; see HeatMap.showHoverValue).
+  heatMap.onValueHover((x, y) => nn.forwardProp(network, constructInput(x, y)));
+
   // Listen for css-responsive changes and redraw the svg network.
 
   window.addEventListener("resize", () => {

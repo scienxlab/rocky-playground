@@ -1101,6 +1101,21 @@ footer .links a:hover {
   opacity: 0.5;
 }
 
+/* Tooltip shown when hovering the output heatmap (model output, or a point's
+   target value). */
+.heatmap-tooltip {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
 /* Batch size lives in the Features column, positioned below the input units.
    #network is absolutely positioned, so this shares its origin with the
    input nodes (which span roughly 0-255px from #network's top). */
