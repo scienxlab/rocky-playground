@@ -788,6 +788,25 @@ function drawNetwork(network: nn.Node[][]): void {
     drawLink(link, node2coord, network, container, i === 0, i,
         node.inputLinks.length);
   }
+
+  // Draw the output node's bias chip at the top-left of the heatmap, just above
+  // where the links join. Uses the same `bias-<id>` convention as the hidden
+  // nodes, so updateBiasesUI colors it and the hover-to-edit card works.
+  container.append("rect")
+    .attr({
+      id: `bias-${node.id}`,
+      x: cx - RECT_SIZE / 2 - 2 * BIAS_SIZE - 2,
+      y: cy - RECT_SIZE / 2 - BIAS_SIZE + 1,
+      width: BIAS_SIZE,
+      height: BIAS_SIZE,
+    })
+    .on("mouseenter", function() {
+      updateHoverCard(HoverType.BIAS, node, d3.mouse(container.node()));
+    })
+    .on("mouseleave", function() {
+      updateHoverCard(null);
+    });
+
   // Adjust the height of the svg.
   svg.attr("height", maxY);
 

@@ -701,6 +701,12 @@ ul {
   z-index: 100;
 }
 
+/* Let the output bias chip (and link arrowheads) render past the svg's edges
+   instead of being clipped, so the chip stays square at the top of the map. */
+#svg {
+  overflow: visible;
+}
+
 #network svg .main-label {
   font-size: 13px;
   fill: #333;
