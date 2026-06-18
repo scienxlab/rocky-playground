@@ -1066,6 +1066,15 @@ footer .links a:hover {
   box-shadow: 0 0 0 10px rgba(0,0,0, 0.12);
 }
 
+/* Prism's default theme gives operators/entities a translucent white
+   background, which shows as a faint highlight behind =, +, *, / etc. on the
+   Python panel. The id scope outranks the CDN theme regardless of load order. */
+#network-as-python .token.operator,
+#network-as-python .token.entity,
+#network-as-python .token.url {
+  background: none;
+}
+
 /* Input/output scaling dropdowns in the data column. Stacked vertically and
    styled to match the idiomatic dropdowns in #top-controls. */
 .ui-scaling {
