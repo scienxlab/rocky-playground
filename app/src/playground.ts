@@ -189,6 +189,21 @@ let lineChart = new AppendingLineChart(d3.select("#linechart"),
     ["#777", "black"]);
 let customLoaded = false;
 let customDataset = null;
+// Elapsed wall-clock training time. `elapsed` is accumulated paused time;
+// `runStart` is the start of the current play run (null when paused).
+let elapsedMs = 0;
+let runStart: number = null;
+
+/** Updates the "Time" readout under the Epoch counter. */
+function updateTimeDisplay() {
+  let total = elapsedMs + (runStart != null ? Date.now() - runStart : 0);
+  let seconds = total / 1000;
+  let text = seconds.toFixed(1);
+  if (seconds < 10) {
+    text = "0" + text;
+  }
+  d3.select("#time-elapsed").text(text);
+}
 
 function makeGUI() {
   d3.select("#reset-button").on("click", () => {
@@ -208,6 +223,14 @@ function makeGUI() {
 
   player.onPlayPause(isPlaying => {
     d3.select("#play-pause-button").classed("playing", isPlaying);
+    // Accumulate elapsed training time across play/pause cycles.
+    if (isPlaying) {
+      runStart = Date.now();
+    } else if (runStart != null) {
+      elapsedMs += Date.now() - runStart;
+      runStart = null;
+    }
+    updateTimeDisplay();
   });
 
   d3.select("#next-step-button").on("click", () => {
@@ -1093,6 +1116,7 @@ function oneStep(): void {
   updateUI();
   // Refresh the evaluation scores each epoch so they track training live.
   updateMetrics(network, testData);
+  updateTimeDisplay();
 }
 
 export function getOutputWeights(network: nn.Node[][]): number[] {
@@ -1132,6 +1156,10 @@ function reset(onStartup=false) {
 
   // Make a simple network.
   iter = 0;
+  // Reset the elapsed-time counter along with the epoch counter.
+  elapsedMs = 0;
+  runStart = null;
+  updateTimeDisplay();
   let numInputs = constructInput(0 , 0).length;
   let shape = [numInputs].concat(state.networkShape).concat([1]);
   let outputActivation = (state.problem === Problem.REGRESSION) ?

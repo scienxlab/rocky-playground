@@ -312,6 +312,15 @@ header h1 .optional {
   font-weight: 300;
 }
 
+/* Epoch counter slightly smaller to make room for the elapsed-time line. */
+#top-controls .control.epoch-counter .value {
+  font-size: 20px;
+}
+#top-controls .control.epoch-counter .epoch-time {
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+
 #top-controls .control .select {
   position: relative;
 }
