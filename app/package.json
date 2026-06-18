@@ -1,5 +1,5 @@
 {
-  "name": "rocky-playground",
+  "name": "playground",
   "version": "2024.06.00",
   "description": "A neural network playground for scientists",
   "keywords": [
@@ -11,7 +11,7 @@
   "author": "Scienxlab <hello@scienxlab.org> (https://scienxlab.org)",
   "license": "Apache 2",
   "bugs": {
-    "url": "https://github.com/scienxlab/rocky-playground/issues"
+    "url": "https://github.com/scienxlab/playground/issues"
   },
   "homepage": "https://playground.scienxlab.org/",
   "private": true,

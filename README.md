@@ -1,14 +1,14 @@
-# Rocky playground
+# Machine Learning Playground
 
 This repo is a fork of Agile's (archived) fork, which was a fork of Google's original project.
 
 The app is currently deployed at [playground.scienxlab.org](https://playground.scienxlab.org).
 
-[![Deploy](https://github.com/scienxlab/rocky-playground/actions/workflows/deploy.yml/badge.svg)](https://github.com/scienxlab/rocky-playground/actions/workflows/deploy.yml)
+[![Deploy](https://github.com/scienxlab/playground/actions/workflows/deploy.yml/badge.svg)](https://github.com/scienxlab/playground/actions/workflows/deploy.yml)
 
 ## About
 
-Rocky Playground is an interactive visualization of neural networks, written in
+Machine Learning Playground is an interactive visualization of neural networks, written in
 TypeScript using d3.js. It is a fork of the [Google Neural Network Playground](https://playground.tensorflow.org/),
 and also incorporates code from [David Cato's fork](https://github.com/dcato98/playground) of the same project.
 

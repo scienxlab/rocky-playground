@@ -14,7 +14,7 @@ jobs:
         uses: fifsky/ssh-action@master
         with:
           command: |
-            cd rocky-playground
+            cd playground
             GIT_SSH_COMMAND='ssh -i /home/matt/.ssh/id_rsa -o IdentitiesOnly=yes' git pull
             make run
           host: ${{ secrets.HOST }}
