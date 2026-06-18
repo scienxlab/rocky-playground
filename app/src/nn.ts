@@ -716,7 +716,7 @@ export function compileNetworkToPy(network: Node[][]): string {
       }
     }
   }
-  let py = "";
+  let py = "import math\n\n";
   Object.keys(helpers).forEach(name => {
     py += helpers[name] + "\n";
   });
