@@ -109,11 +109,20 @@ export interface EvalFunction {
   eval: (output: number[], target: number[]) => number;
 }
 
+/** A standalone Python helper function emitted above the compiled network. */
+export interface PyHelper {
+  name: string;
+  def: string;
+}
+
 /** A node's activation function and its derivative. */
 export interface ActivationFunction {
   output: (input: number) => number;
   der: (input: number) => number;
   compileToPy: (input: string) => string;
+  /** Optional Python helper to define once and call from compileToPy, for
+   *  activations that would otherwise need the input expression repeated. */
+  pyHelper?: PyHelper;
 }
 
 /** Function that computes a penalty cost for a given weight in the network. */
@@ -333,17 +342,25 @@ export class Activations {
   public static LeakyRELU: ActivationFunction = {
     output: x => x <= 0 ? 0.1 * x : x,
     der: x => x <= 0 ? 0.1 : 1,
-    compileToPy: (input: string) => `max(0, ${input} * 0.1)`
+    compileToPy: (input: string) => `leaky_relu(${input})`,
+    pyHelper: {
+      name: "leaky_relu",
+      def: "def leaky_relu(x):\n    return x if x > 0 else 0.1 * x\n"
+    }
   };
   public static ELU: ActivationFunction = {
     output: x => x <= 0 ? 0.1 * (Math.exp(x) - 1) : x,
     der: x => x > 0 ? 1 : Activations.ELU.output(x) + 0.1,
-    compileToPy: (input: string) => `ELU(${input})`
+    compileToPy: (input: string) => `elu(${input})`,
+    pyHelper: {
+      name: "elu",
+      def: "def elu(x):\n    return x if x > 0 else 0.1 * (math.exp(x) - 1)\n"
+    }
   };
   public static SOFTPLUS: ActivationFunction = {
     output: x => Math.log(1 + Math.exp(x)),
     der: x => 1 / (1 + Math.exp(-x)),  // Sigmoid function
-    compileToPy: (input: string) => `np.log(1 + np.exp(${input}))`
+    compileToPy: (input: string) => `math.log(1 + math.exp(${input}))`
   };
   public static SIGMOID: ActivationFunction = {
     output: x => 1 / (1 + Math.exp(-x)),
@@ -362,7 +379,11 @@ export class Activations {
       let output = Activations.SIGMOID.output(x);
       return output + x * output * (1 - output);
     },
-    compileToPy: (input: string) => `${input} * SIGMOID(${input})`
+    compileToPy: (input: string) => `swish(${input})`,
+    pyHelper: {
+      name: "swish",
+      def: "def swish(x):\n    return x / (1 + math.exp(-x))\n"
+    }
   };
   public static MISH: ActivationFunction = {
     output: x => x * (Math as any).tanh(Math.log(1 + Math.exp(x))),
@@ -372,7 +393,11 @@ export class Activations {
       let tanhVal = (Math as any).tanh(Math.log(delta));
       return tanhVal + x * (omega / delta) * (1 - tanhVal * tanhVal);
     },
-    compileToPy: (input: string) => `${input} * np.tanh(np.log(1 + np.exp(${input})))`
+    compileToPy: (input: string) => `mish(${input})`,
+    pyHelper: {
+      name: "mish",
+      def: "def mish(x):\n    return x * math.tanh(math.log(1 + math.exp(x)))\n"
+    }
   };
   public static GELU: ActivationFunction = {
     output: x => {
@@ -386,7 +411,13 @@ export class Activations {
       let term2 = 0.5 * (Math as any).tanh(0.797885 * x + 0.0356774 * x**3);
       return 0.5 + term1 * sech**2 + term2;
     },
-    compileToPy: (input: string) => `${input} * GELU(${input})`
+    compileToPy: (input: string) => `gelu(${input})`,
+    pyHelper: {
+      name: "gelu",
+      def: "def gelu(x):\n" +
+        "    return 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * " +
+        "(x + 0.044715 * x**3)))\n"
+    }
   };
   public static LINEAR: ActivationFunction = {
     output: x => x,
@@ -396,7 +427,11 @@ export class Activations {
   public static BENT_IDENTITY: ActivationFunction = {
     output: x => (Math.sqrt(x * x + 1) - 1) / 2 + x,
     der: x => x / (2 * Math.sqrt(x * x + 1)) + 1,
-    compileToPy: (input: string) => `(np.sqrt(${input}**2 + 1) - 1) / 2 + ${input}`
+    compileToPy: (input: string) => `bent_identity(${input})`,
+    pyHelper: {
+      name: "bent_identity",
+      def: "def bent_identity(x):\n    return (math.sqrt(x**2 + 1) - 1) / 2 + x\n"
+    }
   };
 }
 
@@ -669,8 +704,38 @@ export function getOutputNode(network: Node[][]) {
 // Returns a highlighted HTML string
 export function compileNetworkToPy(network: Node[][]): string {
   const inputLayer = network[0];
-  let py = `def forward(${inputLayer.map(node => node.compileToPyName()).join(", ")}):\n`;
+
+  // Hoist the Python helper for each non-trivial activation used (deduped).
+  let helpers: {[name: string]: string} = {};
+  for (let layerIdx = 1; layerIdx < network.length; layerIdx++) {
+    let layer = network[layerIdx];
+    for (let i = 0; i < layer.length; i++) {
+      let helper = layer[i].activation.pyHelper;
+      if (helper != null) {
+        helpers[helper.name] = helper.def;
+      }
+    }
+  }
+  let py = "";
+  Object.keys(helpers).forEach(name => {
+    py += helpers[name] + "\n";
+  });
+
+  // The network is a function of the two inputs; composite features (products
+  // and squares) are derived inside rather than passed in.
+  py += `def forward(X1, X2):\n`;
   py += `    """Compute a forward pass of the network."""\n`;
+  for (let i = 0; i < inputLayer.length; i++) {
+    let name = inputLayer[i].compileToPyName();
+    if (name === "X1X2") {
+      py += `    X1X2 = X1 * X2\n`;
+    } else if (name === "X1_squared") {
+      py += `    X1_squared = X1**2\n`;
+    } else if (name === "X2_squared") {
+      py += `    X2_squared = X2**2\n`;
+    }
+  }
+
   for (let layerIdx = 1; layerIdx < network.length; layerIdx++) {
     let currentLayer = network[layerIdx];
     for (let i = 0; i < currentLayer.length; i++) {
@@ -681,4 +746,4 @@ export function compileNetworkToPy(network: Node[][]): string {
   py += `    return ${network[network.length - 1][0].compileToPyName()}\n`;
   const html = Prism.highlight(py, Prism.languages.python, 'python');
   return html;
-} 
+}
