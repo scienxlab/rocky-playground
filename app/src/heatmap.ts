@@ -77,7 +77,7 @@ export class HeatMap {
     // Get a range of colors.
     let tmpScale = d3.scale.linear<string, number>()
         .domain([0, .5, 1])
-        .range(["#325396", "#e8eaeb", "#16afca"])
+        .range(["#325396", "#e8eaeb", "#04bdde"])
         .clamp(true);
     // Due to numerical error, we need to specify
     // d3.range(0, end + small_epsilon, step)

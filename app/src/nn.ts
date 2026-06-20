@@ -276,7 +276,7 @@ export class Errors {
     },
     der: (output: number, target: number) => {
       const target01 = (target + 1) / 2;
-      const output01 = (output + 1) / 2;
+      const output01 = Math.min(Math.max((output + 1) / 2, 1e-15), 1 - 1e-15); // Clamp.
       // (output01 - target01) / (output01 * (1 - output01)) is dE/d(output01);
       // chain rule by d(output01)/d(output) = 1/2 to get dE/d(output).
       return 0.5 * (output01 - target01) / (output01 * (1 - output01));

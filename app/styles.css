@@ -874,6 +874,65 @@ ul {
   color: #777;
 }
 
+.output-activation {
+  display: flex;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.output-activation .label {
+  margin-right: 0;
+}
+
+.output-activation .mdl-radio {
+  width: auto;
+  margin-left: 18px !important;
+  font-size: 13px;
+}
+
+/* Drop the label so it vertically centers. */
+.output-activation .mdl-radio__label {
+  position: relative;
+  top: 3px;
+}
+
+/* "What kinds of estimators can I make?" table */
+.estimator-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin: 16px 0;
+}
+
+.estimator-table th,
+.estimator-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.estimator-table th {
+  font-weight: 400;
+  color: #777;
+  border-bottom: 1px solid #ccc;
+}
+
+.estimator-table tr.group td {
+  font-weight: 500;
+  color: #333;
+  background: #f0f0f0;
+}
+
+.estimator-table a.estimator-link {
+  color: #325396;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.estimator-table a.estimator-link:hover {
+  text-decoration: underline;
+}
+
 #loss-test {
   color: black;
 }

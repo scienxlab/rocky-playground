@@ -34,6 +34,12 @@ export let activations: {[key: string]: nn.ActivationFunction} = {
   "bent": nn.Activations.BENT_IDENTITY
 };
 
+/** Output-layer activations selectable via the radio buttons. */
+export let outputActivations: {[key: string]: nn.ActivationFunction} = {
+  "linear": nn.Activations.LINEAR,
+  "tanh": nn.Activations.TANH
+};
+
 /** A map between names and regularization functions. */
 export let regularizations: {[key: string]: nn.RegularizationFunction} = {
   "none": null,
@@ -177,6 +183,7 @@ export class State {
 
   private static PROPS: Property[] = [
     {name: "activation", type: Type.OBJECT, keyMap: activations},
+    {name: "outputActivation", type: Type.OBJECT, keyMap: outputActivations},
     {name: "regularization", type: Type.OBJECT, keyMap: regularizations},
     {name: "batchSize", type: Type.NUMBER},
     {name: "dataset", type: Type.OBJECT, keyMap: datasets},
@@ -214,6 +221,7 @@ export class State {
   tutorial: string = null;
   percTrainData = 50;
   activation = nn.Activations.SIGMOID;
+  outputActivation = nn.Activations.TANH;
   regularization: nn.RegularizationFunction = null;
   errorFunc = nn.Errors.SQUARE;
   problem = Problem.CLASSIFICATION;
@@ -241,7 +249,13 @@ export class State {
     let map: {[key: string]: string} = {};
     for (let keyvalue of window.location.hash.slice(1).split("&")) {
       let [name, value] = keyvalue.split("=");
-      map[name] = value;
+      if (name === "" || name == null) {
+        continue;
+      }
+      // Decode so values containing spaces (e.g. "cross entropy",
+      // "epsilon insensitive") round-trip and match the key maps.
+      map[decodeURIComponent(name)] =
+          value == null ? value : decodeURIComponent(value);
     }
     let state = new State();
 

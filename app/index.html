@@ -373,20 +373,32 @@ limitations under the License.
         <div style="display:flex; align-items:center;">
           <!-- Gradient color scale -->
           <div class="label" style="width:105px; margin-right: 10px">
-            Colors shows data, neuron and weight values.
+            Colors show data &amp; weight values
           </div>
           <svg width="150" height="30" id="colormap">
             <defs>
               <linearGradient id="gradient" x1="0%" y1="100%" x2="100%" y2="100%">
                 <stop offset="0%" stop-color="#325396" stop-opacity="1"></stop>
                 <stop offset="50%" stop-color="#e8eaeb" stop-opacity="1"></stop>
-                <stop offset="100%" stop-color="#16afca" stop-opacity="1"></stop>
+                <stop offset="100%" stop-color="#04bdde" stop-opacity="1"></stop>
               </linearGradient>
             </defs>
             <g class="core" transform="translate(3, 0)">
               <rect width="144" height="10" style="fill: url('#gradient');"></rect>
             </g>
           </svg>
+        </div>
+
+        <div class="output-activation">
+          <span class="label">Output layer:</span>
+          <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="output-act-linear">
+            <input type="radio" id="output-act-linear" class="mdl-radio__button" name="output-activation" value="linear">
+            <span class="mdl-radio__label">Linear</span>
+          </label>
+          <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="output-act-tanh">
+            <input type="radio" id="output-act-tanh" class="mdl-radio__button" name="output-activation" value="tanh">
+            <span class="mdl-radio__label">Tanh</span>
+          </label>
         </div>
 
         <div style="display:flex; margin-top:20px; margin-bottom:30px;">
@@ -403,7 +415,7 @@ limitations under the License.
 
         <h4>Evaluation</h4>
 
-        <p>How we evaluate the performance depends on the task. These are just examples:</p>
+        <p>Examples of performance metrics:</p>
 
         <div class="metrics" id="eval-classification" style="margin-top:10px;">
           <div class="output-stats">
@@ -560,25 +572,25 @@ limitations under the License.
     <div class="l--body">
       <h2>What kinds of estimators can I make?</h2>
       <p>If you remove all the hidden layers, then the Playground can implement some 'shallow' learning algorithms:</p>
-      <ul>
-        <li>Regression
-          <ul>
-            <li><strong>Linear regression:</strong> Choose squared loss.</li>
-            <li><strong>Ridge or Lasso:</strong> Add L2 or L1 regularization respectively.</li>
-            <li><strong>Basis expansion:</strong> Add the other input features.</li>
-            <li><strong>Robust regression:</strong> Use Huber loss.</li>
-            <li><strong>SVM regression:</strong> Use epsilon insensitive loss.</li>
-          </ul>
-        </li>
-        <li>Classification
-          <ul>
-            <li><strong>Ridge classifier:</strong> Choose squared loss and L2 regularization.</li>
-            <li><strong>Logistic regression:</strong> Choose log loss.</li>
-            <li><strong>Support vector machine:</strong> Use hinge loss.</li>
-          </ul>
-        </li>
-      </ul>
-      <p>Note that for classification tasks, tanh activation is applied to the output layer to squeeze the result into (–1, +1). For regression, there is no activation on the output.</p>
+      <p>Each estimator name is a link that loads it for you. To add <strong>basis expansion</strong> (e.g. polynomial regression), also turn on the squared and product features (X₁², X₂², X₁X₂).</p>
+      <table class="estimator-table">
+        <thead>
+          <tr><th>Estimator</th><th>Loss</th><th>Regularizer</th><th>Output</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group"><td colspan="4">Regression</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=square&amp;regularization=none&amp;outputActivation=linear">Linear regression</a></td><td>Squared</td><td>None</td><td>Linear</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=square&amp;regularization=L2&amp;outputActivation=linear">Ridge regression</a></td><td>Squared</td><td>L2</td><td>Linear</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=square&amp;regularization=L1&amp;outputActivation=linear">Lasso regression</a></td><td>Squared</td><td>L1</td><td>Linear</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=huber&amp;regularization=none&amp;outputActivation=linear">Robust regression</a></td><td>Huber</td><td>None</td><td>Linear</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=epsilon%20insensitive&amp;regularization=L2&amp;outputActivation=linear">SVM regression</a></td><td>ε-insensitive</td><td>L2</td><td>Linear</td></tr>
+          <tr class="group"><td colspan="4">Classification</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=classification&amp;dataset=linear&amp;errorFunc=square&amp;regularization=L2&amp;outputActivation=linear">Ridge classifier</a></td><td>Squared</td><td>L2</td><td>Linear</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=classification&amp;dataset=linear&amp;errorFunc=cross%20entropy&amp;regularization=none&amp;outputActivation=tanh">Logistic regression</a></td><td>Log</td><td>None</td><td>Tanh</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=classification&amp;dataset=linear&amp;errorFunc=hinge&amp;regularization=L2&amp;outputActivation=linear">Support vector machine</a></td><td>Hinge</td><td>L2</td><td>Linear</td></tr>
+        </tbody>
+      </table>
+      <p>The output activation is the model's link function. <em>Linear</em> sends the raw score (w·x + b) straight to the loss — needed for the ridge classifier and a genuine SVM. <em>Tanh</em> squashes it into (–1, +1); since (tanh(z)+1)/2 = sigmoid(2z), pairing it with log loss gives logistic regression.</p>
     </div>
 
     <div class="l--body">

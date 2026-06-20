@@ -20,6 +20,7 @@ import {
   datasets,
   regDatasets,
   activations,
+  outputActivations,
   problems,
   regularizations,
   errors,
@@ -172,7 +173,7 @@ let linkWidthScale = d3.scale.linear()
   .clamp(true);
 let colorScale = d3.scale.linear<string, number>()
                      .domain([-1, 0, 1])
-                     .range(["#325396", "#e8eaeb", "#16afca"])
+                     .range(["#325396", "#e8eaeb", "#04bdde"])
                      .clamp(true);
 // Scale behind the gradient colorbar legend. Its domain tracks the output
 // range (see outputColorDomain), so the legend stays meaningful when the
@@ -206,6 +207,26 @@ function updateTimeDisplay() {
 }
 
 function makeGUI() {
+  // Tidy up the cache-busting query string left behind by an estimator-link
+  // load (see below), keeping only the hash so the address bar stays clean.
+  if (window.location.search.indexOf("estimator=") !== -1) {
+    window.history.replaceState(null, "",
+        window.location.pathname + window.location.hash);
+  }
+
+  // "Estimator" links in the explainer text load a preset config from their
+  // href hash. State is only read at page load, and a bare hash change is a
+  // same-document navigation that does NOT reload. Varying the query string
+  // forces a real document load so the preset actually takes effect.
+  d3.selectAll("a.estimator-link").on("click", function() {
+    let href = (<HTMLAnchorElement>this).getAttribute("href") || "";
+    // Navigate straight to a cross-document URL (query string varies), which
+    // forces a real load and supersedes the default hash-only navigation.
+    // No d3.event/preventDefault needed.
+    window.location.href =
+        window.location.pathname + "?estimator=" + Date.now() + href;
+  });
+
   d3.select("#reset-button").on("click", () => {
     reset();
     userHasInteracted();
@@ -468,8 +489,28 @@ function makeGUI() {
     getKeyFromValue(errors, state.errorFunc)
   );
 
+  // Output-layer activation radio buttons (Linear / Tanh).
+  d3.selectAll("input[name=output-activation]").on("change", function() {
+    state.outputActivation = outputActivations[this.value];
+    state.serialize();
+    userHasInteracted();
+    parametersChanged = true;
+    reset();
+  });
+  function updateOutputActivationRadios() {
+    let key = getKeyFromValue(outputActivations, state.outputActivation);
+    d3.select(`#output-act-${key}`).property("checked", true);
+  }
+  updateOutputActivationRadios();
+
   let problem = d3.select("#problem").on("change", function() {
     state.problem = problems[this.value];
+    // Default the output activation to the sensible choice for the problem
+    // type (linear for regression, tanh for classification); the user can
+    // still override it with the radio buttons.
+    state.outputActivation = (state.problem === Problem.REGRESSION) ?
+        nn.Activations.LINEAR : nn.Activations.TANH;
+    updateOutputActivationRadios();
     updateOutputScalingAvailability();
     generateData();
     drawDatasetThumbnails();
@@ -1162,8 +1203,7 @@ function reset(onStartup=false) {
   updateTimeDisplay();
   let numInputs = constructInput(0 , 0).length;
   let shape = [numInputs].concat(state.networkShape).concat([1]);
-  let outputActivation = (state.problem === Problem.REGRESSION) ?
-      nn.Activations.LINEAR : nn.Activations.TANH;
+  let outputActivation = state.outputActivation;
   network = nn.buildNetwork(shape, state.activation, outputActivation,
       constructInputIds(), state.initZero);
   lossTrain = getLoss(network, trainData, state.errorFunc);
