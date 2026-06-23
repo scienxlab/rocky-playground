@@ -3,8 +3,3 @@ dist/
 *.log
 .vscode
 .DS_Store
-
-# Caddy runtime state and TLS material (contains private keys)
-data/caddy_config/
-data/caddy_data/
-
