@@ -25,7 +25,7 @@ export let activations: {[key: string]: nn.ActivationFunction} = {
   "leakyrelu": nn.Activations.LeakyRELU,
   "elu": nn.Activations.ELU,
   "tanh": nn.Activations.TANH,
-  "sigmoid": nn.Activations.SIGMOID,
+  "logistic": nn.Activations.LOGISTIC,
   "swish": nn.Activations.SWISH,
   "mish": nn.Activations.MISH,
   "softplus": nn.Activations.SOFTPLUS,
@@ -68,7 +68,10 @@ export let errors: {[key: string]: nn.ErrorFunction} = {
   "cross entropy": nn.Errors.BINARY_CROSS_ENTROPY,
   "exponential": nn.Errors.EXPONENTIAL,
   "poisson": nn.Errors.POISSON,
-  "epsilon insensitive": nn.Errors.EPSILON_INSENSITIVE
+  "epsilon insensitive": nn.Errors.EPSILON_INSENSITIVE,
+  "quantile 0.1": nn.Errors.QUANTILE_01,
+  "quantile 0.5": nn.Errors.QUANTILE_05,
+  "quantile 0.9": nn.Errors.QUANTILE_09
 };
 
 /** DatasetGenerator class contains generator functions for training and
@@ -220,7 +223,7 @@ export class State {
   discretize = false;
   tutorial: string = null;
   percTrainData = 50;
-  activation = nn.Activations.SIGMOID;
+  activation = nn.Activations.LOGISTIC;
   outputActivation = nn.Activations.TANH;
   regularization: nn.RegularizationFunction = null;
   errorFunc = nn.Errors.SQUARE;

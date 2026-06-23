@@ -99,6 +99,9 @@ limitations under the License.
             <option value="exponential">Exponential loss</option>
             <option value="poisson">Poisson loss</option>
             <option value="epsilon insensitive">ε insensitive</option>
+            <option value="quantile 0.1">Quantile (q=0.1)</option>
+            <option value="quantile 0.5">Quantile (q=0.5)</option>
+            <option value="quantile 0.9">Quantile (q=0.9)</option>
           </select>
         </div>
       </div>
@@ -126,7 +129,7 @@ limitations under the License.
           <select id="activations">
             <option value="linear">Linear (none)</option>
             <option value="bent">Bent identity</option>
-            <option value="sigmoid">Sigmoid</option>
+            <option value="logistic">Logistic</option>
             <option value="tanh">Tanh</option>
             <option value="relu">ReLU</option>
             <option value="leakyrelu">Leaky ReLU</option>
@@ -572,7 +575,6 @@ limitations under the License.
     <div class="l--body">
       <h2>What kinds of estimators can I make?</h2>
       <p>If you remove all the hidden layers, then the Playground can implement some 'shallow' learning algorithms:</p>
-      <p>Each estimator name is a link that loads it for you. To add <strong>basis expansion</strong> (e.g. polynomial regression), also turn on the squared and product features (X₁², X₂², X₁X₂).</p>
       <table class="estimator-table">
         <thead>
           <tr><th>Estimator</th><th>Loss</th><th>Regularizer</th><th>Output</th></tr>
@@ -583,6 +585,8 @@ limitations under the License.
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=square&amp;regularization=L2&amp;outputActivation=linear">Ridge regression</a></td><td>Squared</td><td>L2</td><td>Linear</td></tr>
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=square&amp;regularization=L1&amp;outputActivation=linear">Lasso regression</a></td><td>Squared</td><td>L1</td><td>Linear</td></tr>
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=huber&amp;regularization=none&amp;outputActivation=linear">Robust regression</a></td><td>Huber</td><td>None</td><td>Linear</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=quantile%200.1&amp;regularization=none&amp;outputActivation=linear">Quantile regression (q=0.1)</a></td><td>Quantile (q=0.1)</td><td>None</td><td>Linear</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=quantile%200.9&amp;regularization=none&amp;outputActivation=linear">Quantile regression (q=0.9)</a></td><td>Quantile (q=0.9)</td><td>None</td><td>Linear</td></tr>
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=epsilon%20insensitive&amp;regularization=L2&amp;outputActivation=linear">SVM regression</a></td><td>ε-insensitive</td><td>L2</td><td>Linear</td></tr>
           <tr class="group"><td colspan="4">Classification</td></tr>
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=classification&amp;dataset=linear&amp;errorFunc=square&amp;regularization=L2&amp;outputActivation=linear">Ridge classifier</a></td><td>Squared</td><td>L2</td><td>Linear</td></tr>
@@ -590,7 +594,7 @@ limitations under the License.
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=classification&amp;dataset=linear&amp;errorFunc=hinge&amp;regularization=L2&amp;outputActivation=linear">Support vector machine</a></td><td>Hinge</td><td>L2</td><td>Linear</td></tr>
         </tbody>
       </table>
-      <p>The output activation is the model's link function. <em>Linear</em> sends the raw score (w·x + b) straight to the loss — needed for the ridge classifier and a genuine SVM. <em>Tanh</em> squashes it into (–1, +1); since (tanh(z)+1)/2 = sigmoid(2z), pairing it with log loss gives logistic regression.</p>
+      <p>To add <strong>basis expansion</strong> (e.g. polynomial regression), turn on the squared and product features.</p>
     </div>
 
     <div class="l--body">

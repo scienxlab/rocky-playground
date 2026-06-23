@@ -713,7 +713,7 @@ ul {
 /* Let the output bias chip (and link arrowheads) render past the svg's edges
    instead of being clipped, so the chip stays square at the top of the map. */
 #svg {
-  overflow: visible;
+  overflow: hidden;
 }
 
 #network svg .main-label {

@@ -844,7 +844,7 @@ function drawNetwork(network: nn.Node[][]): void {
   cx = width + RECT_SIZE / 2;
   let node = network[numLayers - 1][0];
   let cy = nodeIndexScale(0) + RECT_SIZE / 2;
-  node2coord[node.id] = {cx, cy};
+  node2coord[node.id] = {cx, cy};  // Adjust for the output only. Affects links (below).
 
   // Draw links.
   for (let i = 0; i < node.inputLinks.length; i++) {
@@ -860,7 +860,7 @@ function drawNetwork(network: nn.Node[][]): void {
     .attr({
       id: `bias-${node.id}`,
       x: cx - RECT_SIZE / 2 - 2 * BIAS_SIZE - 2,
-      y: cy - RECT_SIZE / 2 - BIAS_SIZE + 1,
+      y: cy + RECT_SIZE / 2,
       width: BIAS_SIZE,
       height: BIAS_SIZE,
     })

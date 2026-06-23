@@ -310,6 +310,25 @@ export class Errors {
       }
     }
   };
+  // Quantile loss. q in (0,1): q=0.5 -> median (1/2 MAE),
+  // q=0.1 / 0.9 -> 10th / 90th percentile regression.
+  public static QUANTILE(q: number): ErrorFunction {
+    return {
+      error: (output: number, target: number) => {
+        const r = output - target;
+        return r > 0 ? (1 - q) * r : -q * r;
+      },
+      der: (output: number, target: number) => {
+        const r = output - target;
+        if (r > 0) { return 1 - q; }
+        if (r < 0) { return -q; }
+        return 0;
+      }
+    };
+  }
+  public static QUANTILE_01: ErrorFunction = Errors.QUANTILE(0.1);
+  public static QUANTILE_05: ErrorFunction = Errors.QUANTILE(0.5);
+  public static QUANTILE_09: ErrorFunction = Errors.QUANTILE(0.9);
 }
 
 /** Polyfill for TANH */
@@ -359,24 +378,24 @@ export class Activations {
   };
   public static SOFTPLUS: ActivationFunction = {
     output: x => Math.log(1 + Math.exp(x)),
-    der: x => 1 / (1 + Math.exp(-x)),  // Sigmoid function
+    der: x => 1 / (1 + Math.exp(-x)),  // Logistic function
     compileToPy: (input: string) => `math.log(1 + math.exp(${input}))`
   };
-  public static SIGMOID: ActivationFunction = {
+  public static LOGISTIC: ActivationFunction = {
     output: x => 1 / (1 + Math.exp(-x)),
     der: x => {
-      let output = Activations.SIGMOID.output(x);
+      let output = Activations.LOGISTIC.output(x);
       return output * (1 - output);
     },
     compileToPy: (input: string) => `1 / (1 + math.exp(-(${input})))`
   };
   public static SWISH: ActivationFunction = {
     output: x => {
-      let output = Activations.SIGMOID.output(x);
+      let output = Activations.LOGISTIC.output(x);
       return x * output;
     },
     der: x => {
-      let output = Activations.SIGMOID.output(x);
+      let output = Activations.LOGISTIC.output(x);
       return output + x * output * (1 - output);
     },
     compileToPy: (input: string) => `swish(${input})`,
