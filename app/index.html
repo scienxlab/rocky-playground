@@ -585,6 +585,7 @@ limitations under the License.
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=square&amp;regularization=L2&amp;outputActivation=linear">Ridge regression</a></td><td>Squared</td><td>L2</td><td>Linear</td></tr>
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=square&amp;regularization=L1&amp;outputActivation=linear">Lasso regression</a></td><td>Squared</td><td>L1</td><td>Linear</td></tr>
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=huber&amp;regularization=none&amp;outputActivation=linear">Robust regression</a></td><td>Huber</td><td>None</td><td>Linear</td></tr>
+          <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=absolute%20error&amp;regularization=none&amp;outputActivation=linear">LAD/Median¹</a></td><td>Absolute</td><td>None</td><td>Linear</td></tr>
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=quantile%200.1&amp;regularization=none&amp;outputActivation=linear">Quantile regression (q=0.1)</a></td><td>Quantile (q=0.1)</td><td>None</td><td>Linear</td></tr>
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=quantile%200.9&amp;regularization=none&amp;outputActivation=linear">Quantile regression (q=0.9)</a></td><td>Quantile (q=0.9)</td><td>None</td><td>Linear</td></tr>
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=regression&amp;regDataset=reg-plane&amp;errorFunc=epsilon%20insensitive&amp;regularization=L2&amp;outputActivation=linear">SVM regression</a></td><td>ε-insensitive</td><td>L2</td><td>Linear</td></tr>
@@ -594,7 +595,7 @@ limitations under the License.
           <tr><td><a class="estimator-link" href="#networkShape=&amp;problem=classification&amp;dataset=linear&amp;errorFunc=hinge&amp;regularization=L2&amp;outputActivation=linear">Support vector machine</a></td><td>Hinge</td><td>L2</td><td>Linear</td></tr>
         </tbody>
       </table>
-      <p>To add <strong>basis expansion</strong> (e.g. polynomial regression), turn on the squared and product features.</p>
+      <p>¹ Least Absolute Deviations (LAD) or Median regression is functionally equivalent to quantile regression with q=0.5.</p>
     </div>
 
     <div class="l--body">
