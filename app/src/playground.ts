@@ -1355,36 +1355,32 @@ function clonePoint(d: Example2D): Example2D {
   return {x: d.x, y: d.y, label: d.label};
 }
 
-/** Fits a padded [min, max] domain to a set of values, for the "none" scaling
- *  mode where the data can occupy any range. */
-function axisDomain(values: number[]): [number, number] {
-  let min = d3.min(values);
-  let max = d3.max(values);
-  if (min == null || max == null) {
-    return [-6, 6];
+/** Fits a symmetric [-m, m] extent to one feature's values, where m is the
+ *  largest absolute value, so the origin sits at the centre of the axis. */
+function symmetricExtent(values: number[]): [number, number] {
+  let m = d3.max(values, v => Math.abs(v));
+  if (m == null) {
+    return [-6, 6];   // no data -> default extent
   }
-  if (min === max) {
-    return [min - 1, max + 1];
+  if (m === 0) {
+    return [-1, 1];   // all values at the origin -> avoid a zero-width domain
   }
-  let pad = (max - min) * 0.05;
-  return [min - pad, max + pad];
+  return [-m, m];
 }
 
 /**
- * Computes the per-axis data domain for the heatmap given the current input
- * scaling. Normalize and standardize have well-defined ranges; "none" fits
- * the domain to the data. The grid resolution (DENSITY) is fixed regardless,
- * so a wide domain just yields coarser cells, never more of them.
+ * Computes the heatmap data domain. Each axis is fit independently to its own
+ * symmetric [-m, m] extent (origin centred). Fitting per-axis (rather than a
+ * shared extent across both features) keeps the data filling the plot edge-to-
+ * edge on both axes, so switching scaler only changes the axis labels: the
+ * points stay put (a per-feature affine rescale maps to the same pixels) rather
+ * than getting inset on the smaller-extent axis. The grid resolution (DENSITY)
+ * is fixed regardless, so a wider domain just yields coarser cells.
  */
 function computeDomains(points: Example2D[]):
     [[number, number], [number, number]] {
-  if (state.inputScaling === "normalize") {
-    return [[-1, 1], [-1, 1]];
-  }
-  if (state.inputScaling === "standardize") {
-    return [[-3, 3], [-3, 3]];
-  }
-  return [axisDomain(points.map(p => p.x)), axisDomain(points.map(p => p.y))];
+  return [symmetricExtent(points.map(p => p.x)),
+          symmetricExtent(points.map(p => p.y))];
 }
 
 /** Resizes the visible data space to the current (scaled) data. */

@@ -485,14 +485,6 @@ g.column rect {
   dominant-baseline: auto;
 }
 
-#heatmap .tick:nth-child(7) text {
-  fill: #333;
-}
-
-#heatmap .tick:nth-child(7) line {
-  stroke: #999;
-}
-
 /* Data column */
 
 .vcenter {
@@ -1204,7 +1196,7 @@ footer .links a:hover {
    input nodes (which span roughly 0-255px from #network's top). */
 #network .ui-batchSize {
   position: absolute;
-  top: 265px;
+  top: 285px;
   left: 0;
   width: 150px;
 }
