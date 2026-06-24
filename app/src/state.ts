@@ -311,6 +311,14 @@ export class State {
       }
     });
 
+    // Default the output activation to the sensible choice for the problem
+    // type (linear for regression, tanh for classification) unless the URL
+    // set it explicitly. The radio buttons still let the user override it.
+    if (!hasKey("outputActivation")) {
+      state.outputActivation = (state.problem === Problem.REGRESSION) ?
+          nn.Activations.LINEAR : nn.Activations.TANH;
+    }
+
     // Deserialize state properties that correspond to hiding UI controls.
     getHideProps(map).forEach(prop => {
       state[prop] = (map[prop] === "true") ? true : false;

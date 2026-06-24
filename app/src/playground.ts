@@ -499,7 +499,13 @@ function makeGUI() {
   });
   function updateOutputActivationRadios() {
     let key = getKeyFromValue(outputActivations, state.outputActivation);
-    d3.select(`#output-act-${key}`).property("checked", true);
+    d3.selectAll("input[name=output-activation]").each(function() {
+      let isChecked = this.value === key;
+      this.checked = isChecked;
+      // MDL tracks the selected radio via an is-checked class on the parent
+      // label; setting the input's checked property alone won't move the dot.
+      d3.select(this.parentElement).classed("is-checked", isChecked);
+    });
   }
   updateOutputActivationRadios();
 
