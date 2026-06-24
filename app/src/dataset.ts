@@ -94,22 +94,16 @@ function scaleField(trainData: Example2D[], testData: Example2D[],
 }
 
 /**
- * Scales the inputs (x, y, each independently) and, optionally, the output
- * (label) of a dataset. Output scaling is skipped unless scaleOutput is true,
- * since for classification the label is a +/-1 class indicator that must not
- * be rescaled.
+ * Scales the inputs (x, y, each independently) of a dataset. The output
+ * (label) is left untouched: all datasets keep their targets in the native
+ * (-1, 1) range, so there is no output scaling.
  */
 export function scaleData(trainData: Example2D[], testData: Example2D[],
-    inputMode: ScalingMode, outputMode: ScalingMode,
-    scaleOutput: boolean): void {
+    inputMode: ScalingMode): void {
   scaleField(trainData, testData, inputMode,
       d => d.x, (d, v) => d.x = v);
   scaleField(trainData, testData, inputMode,
       d => d.y, (d, v) => d.y = v);
-  if (scaleOutput) {
-    scaleField(trainData, testData, outputMode,
-        d => d.label, (d, v) => d.label = v);
-  }
 }
 
 export function classifyTwoGaussData(numSamples: number, noise: number):

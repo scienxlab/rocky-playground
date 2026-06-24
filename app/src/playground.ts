@@ -86,7 +86,6 @@ let HIDABLE_CONTROLS = [
   ["Loss function", "lossFunc"],
   ["Problem type", "problem"],
   ["Input scaling", "inputScaling"],
-  ["Output scaling", "outputScaling"],
   ["Which dataset", "dataset"],
   ["Ratio train data", "percTrainData"],
   ["Noise level", "noise"],
@@ -512,7 +511,6 @@ function makeGUI() {
     state.outputActivation = (state.problem === Problem.REGRESSION) ?
         nn.Activations.LINEAR : nn.Activations.TANH;
     updateOutputActivationRadios();
-    updateOutputScalingAvailability();
     generateData();
     drawDatasetThumbnails();
     parametersChanged = true;
@@ -540,18 +538,7 @@ function makeGUI() {
     d3.select(`#${selectId}`).property("value", state[stateProp]);
   }
 
-  // Output scaling only applies to regression; classification labels are
-  // +/-1 class indicators, so the control is disabled there.
-  function updateOutputScalingAvailability() {
-    let isRegression = state.problem === Problem.REGRESSION;
-    d3.select(".ui-outputScaling").classed("disabled", !isRegression);
-    d3.select("#outputScaling").property("disabled", !isRegression)
-        .style("color", isRegression ? "" : "#aaa");
-  }
-
   wireScaling("inputScaling", "inputScaling");
-  wireScaling("outputScaling", "outputScaling");
-  updateOutputScalingAvailability();
 
   // Add scale to the gradient color map (domain updated by updateColorMap).
   updateColorMap([-1, 1]);
@@ -1472,11 +1459,9 @@ function generateData(firstTime = false, custom=null) {
         .map(clonePoint);
   }
 
-  // Apply the user's input/output scaling. Stats are fit on the training data
-  // and applied to both sets. The output (label) is only scaled for
-  // regression; classification labels stay as +/-1 class indicators.
-  scaleData(trainData, testData, state.inputScaling, state.outputScaling,
-      state.problem === Problem.REGRESSION);
+  // Apply the user's input scaling. Stats are fit on the training data and
+  // applied to both sets. Targets are left in their native (-1, 1) range.
+  scaleData(trainData, testData, state.inputScaling);
 
   // Resize the data space to fit the (possibly rescaled) data.
   updateDataDomain();
